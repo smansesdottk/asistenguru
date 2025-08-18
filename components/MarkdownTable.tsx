@@ -64,38 +64,38 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({ tableString }) => {
   };
 
   if (headers.length === 0 || rows.length === 0) {
-    return <p className="text-xs text-slate-500 italic">[Data tabel tidak lengkap]</p>;
+    return <p className="text-xs text-slate-500 dark:text-slate-400 italic">[Data tabel tidak lengkap]</p>;
   }
 
 
   return (
-    <div className="my-1 text-slate-800">
+    <div className="my-1 text-slate-800 dark:text-slate-200">
       <div className="flex justify-end items-center gap-2 mb-1">
-        <button onClick={handleCopy} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 p-1 rounded transition-colors" title="Salin Tabel">
+        <button onClick={handleCopy} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded transition-colors" title="Salin Tabel">
           <CopyIcon />
           <span>{copyStatus === 'copied' ? 'Disalin!' : 'Salin'}</span>
         </button>
-        <button onClick={handleExportCsv} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 p-1 rounded transition-colors" title="Ekspor ke CSV">
+        <button onClick={handleExportCsv} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded transition-colors" title="Ekspor ke CSV">
           <CsvIcon />
           <span>CSV</span>
         </button>
       </div>
-      <div className="overflow-x-auto border border-slate-300 rounded-lg shadow-sm">
+      <div className="overflow-x-auto border border-slate-300 dark:border-gray-600 rounded-lg shadow-sm">
         <table className="min-w-full text-sm text-left">
-          <thead className="bg-slate-100">
+          <thead className="bg-slate-100 dark:bg-gray-700">
             <tr>
               {headers.map((header, index) => (
-                <th key={index} className="px-4 py-2 font-semibold border-b border-slate-300 text-slate-700">
+                <th key={index} className="px-4 py-2 font-semibold border-b border-slate-300 dark:border-gray-600 text-slate-700 dark:text-slate-200">
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white">
+          <tbody className="bg-white dark:bg-gray-800">
             {rows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-slate-50 border-b border-slate-200 last:border-b-0">
+              <tr key={rowIndex} className="hover:bg-slate-50 dark:hover:bg-gray-700/50 border-b border-slate-200 dark:border-gray-700 last:border-b-0">
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} className="px-4 py-2 text-slate-700">
+                  <td key={cellIndex} className="px-4 py-2 text-slate-700 dark:text-slate-300">
                     {cell}
                   </td>
                 ))}

@@ -30,7 +30,7 @@ const StatusItem: React.FC<{ name: string, statusDetail: StatusDetail }> = ({ na
   return (
      <div className="flex items-center gap-2 text-xs" title={statusDetail.message}>
       <StatusDot status={statusDetail.status} />
-      <span className="font-medium text-slate-600">{name}</span>
+      <span className="font-medium text-slate-600 dark:text-slate-300">{name}</span>
     </div>
   );
 };

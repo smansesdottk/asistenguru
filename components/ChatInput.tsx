@@ -45,14 +45,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
         onChange={(e) => setInputText(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Ketik pertanyaan Anda di sini... (Shift+Enter untuk baris baru)"
-        className="flex-1 py-2 px-3 border border-slate-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none transition max-h-28"
+        className="flex-1 py-2 px-3 border border-slate-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none transition max-h-28 dark:bg-gray-800 dark:text-slate-200 dark:border-gray-600 dark:placeholder-gray-400"
         rows={1}
         disabled={isLoading}
       />
       <button
         type="submit"
         disabled={isLoading || !inputText.trim()}
-        className="p-3 bg-blue-600 text-white rounded-lg disabled:bg-slate-400 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors flex items-center justify-center w-12 h-12 flex-shrink-0"
+        className="p-3 bg-blue-600 text-white rounded-lg disabled:bg-slate-400 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors flex items-center justify-center w-12 h-12 flex-shrink-0 dark:disabled:bg-gray-600 dark:hover:bg-blue-500"
       >
         {isLoading ? (
           <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

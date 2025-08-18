@@ -38,7 +38,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
   const showShareButton = typeof navigator.share === 'function';
 
   const wrapperClasses = isUser ? 'flex-row-reverse' : '';
-  const bubbleClasses = isUser ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-800';
+  const bubbleClasses = isUser ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-gray-700 dark:text-slate-200';
   const icon = isUser ? <UserIcon /> : <BotIcon />;
 
   const tableRegex = /((?:\|\s*.*?\s*\|(?:\r?\n|\r|$))+)/g;
@@ -92,21 +92,21 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
       >
         {contentParts.map((part, index) => {
           if (part.type === 'table') {
-            return <div key={index} className="bg-white rounded-lg p-2 my-2"><MarkdownTable tableString={part.content} /></div>;
+            return <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-2 my-2"><MarkdownTable tableString={part.content} /></div>;
           }
           return part.content.trim() ? <p key={index} className="whitespace-pre-wrap"><SimpleMarkdownRenderer text={part.content} /></p> : null;
         })}
       </div>
       <div className={`flex items-center self-center transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-         <button onClick={handleCopy} title={copyStatus === 'copied' ? 'Disalin!' : 'Salin Pesan'} className="p-2 text-slate-500 hover:text-slate-800">
+         <button onClick={handleCopy} title={copyStatus === 'copied' ? 'Disalin!' : 'Salin Pesan'} className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">
             <CopyIcon />
         </button>
         {showShareButton && (
-          <button onClick={handleShare} title="Bagikan" className="p-2 text-slate-500 hover:text-slate-800">
+          <button onClick={handleShare} title="Bagikan" className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">
             <ShareIcon />
           </button>
         )}
-        <button onClick={onDelete} title="Hapus" className="p-2 text-slate-500 hover:text-red-500">
+        <button onClick={onDelete} title="Hapus" className="p-2 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-500">
           <DeleteIcon />
         </button>
       </div>

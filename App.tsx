@@ -61,8 +61,8 @@ const App: React.FC = () => {
 
   if (isLoading || !config) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-100">
-        <div className="text-slate-600">Memuat aplikasi...</div>
+      <div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-gray-900">
+        <div className="text-slate-600 dark:text-slate-300">Memuat aplikasi...</div>
       </div>
     );
   }

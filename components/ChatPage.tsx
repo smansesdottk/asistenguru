@@ -140,18 +140,18 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-sans">
-      <header className="bg-white shadow-md p-4 border-b border-slate-200 flex items-center justify-between gap-4">
+    <div className="flex flex-col h-screen bg-slate-50 dark:bg-gray-800 font-sans">
+      <header className="bg-white dark:bg-gray-900 shadow-md p-4 border-b border-slate-200 dark:border-gray-700 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
             <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full flex-shrink-0" />
             <div className="min-w-0">
-                <h1 className="text-lg font-bold text-slate-800 truncate">{user.name}</h1>
-                <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100 truncate">{user.name}</h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
             </div>
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
             <StatusIndicator status={systemStatus} />
-            <button onClick={onLogout} className="text-xs text-blue-600 hover:underline">
+            <button onClick={onLogout} className="text-xs text-blue-600 dark:text-blue-400 hover:underline dark:hover:text-blue-300">
                 Logout
             </button>
         </div>
@@ -170,21 +170,21 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         ))}
         {isLoading && (
           <div className="flex justify-start items-center space-x-3">
-             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
-               <svg className="w-6 h-6 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="http://www.w3.org/2000/svg" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-200 dark:bg-gray-700 flex items-center justify-center">
+               <svg className="w-6 h-6 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="http://www.w3.org/2000/svg" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
              </div>
-             <div className="bg-slate-200 p-3 rounded-lg flex items-center space-x-2">
-                <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></div>
+             <div className="bg-slate-200 dark:bg-gray-700 p-3 rounded-lg flex items-center space-x-2">
+                <div className="w-2 h-2 bg-slate-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-slate-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-2 h-2 bg-slate-500 dark:bg-slate-400 rounded-full animate-bounce"></div>
             </div>
           </div>
         )}
       </main>
 
-      <footer className="bg-white p-4 border-t border-slate-200">
+      <footer className="bg-white dark:bg-gray-900 p-4 border-t border-slate-200 dark:border-gray-700">
         <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading || !isInitialized} />
-         <p className="text-center text-xs text-slate-400 mt-2">
+         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-2">
           Asisten Guru AI | Versi {config.appVersion || 'N/A'} | Author : A. Indra Malik - sman11mks
         </p>
       </footer>
