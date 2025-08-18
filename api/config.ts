@@ -22,6 +22,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     googleClientId: GOOGLE_CLIENT_ID,
     isGoogleLoginConfigured: isGoogleLoginConfigured,
     appBaseUrl: APP_BASE_URL,
+    googleWorkspaceDomain: GOOGLE_WORKSPACE_DOMAIN,
   };
 
   return res.status(200).json(config);

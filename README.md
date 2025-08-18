@@ -69,7 +69,7 @@ Sebelum menekan tombol, pastikan Anda sudah memiliki semua informasi berikut. In
 3.  **Isi Environment Variables**: Ini adalah bagian terpenting. Vercel akan menampilkan formulir untuk mengisi semua konfigurasi.
     *   Isi semua variabel sesuai data yang sudah Anda siapkan.
     *   **UNTUK `APP_BASE_URL`**: Karena Anda belum tahu URL finalnya, isi dengan placeholder sementara, contoh: `https://placeholder.com`. **Kita akan memperbaikinya di Langkah 4.**
-    *   **UNTUK `JWT_SECRET`**: Buat string acak yang sangat panjang dan aman (64+ karakter). Anda bisa menggunakan generator kata sandi online.
+    *   **UNTUK `JWT_SECRET`**: Buat string acak yang sangat panjang dan aman (64+ karakter). Anda bisa menggunakan generator online seperti [jwtsecrets.com](https://jwtsecrets.com/#generator) (pilih panjang 64+ karakter) untuk membuatnya.
     *   **VARIABEL GOOGLE (Opsional)**: Jika Anda tidak ingin menggunakan login Google, biarkan `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_WORKSPACE_DOMAIN` **kosong**. Aplikasi akan otomatis beralih ke mode "Hanya Admin".
 4.  **Klik "Deploy"**: Setelah semua terisi, klik "Deploy". Vercel akan memulai proses build. Tunggu beberapa menit hingga selesai.
 

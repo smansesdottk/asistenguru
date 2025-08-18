@@ -42,4 +42,5 @@ export interface PublicConfig {
   googleClientId?: string;
   isGoogleLoginConfigured?: boolean;
   appBaseUrl?: string;
+  googleWorkspaceDomain?: string;
 }

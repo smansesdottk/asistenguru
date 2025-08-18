@@ -89,7 +89,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, config }) => {
                                 <svg className="w-5 h-5" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M47.532 24.552c0-1.566-.14-3.09-.408-4.552H24.38v8.65h13.01c-.562 2.782-2.22 5.15-4.792 6.786v5.61h7.222c4.228-3.89,6.648-9.674,6.648-16.494z" fill="#4285F4"></path><path d="M24.38 48c6.48 0 11.93-2.14 15.908-5.786l-7.222-5.61c-2.14 1.44-4.882 2.292-7.936 2.292-6.14 0-11.34-4.13-13.2-9.722H3.85v5.794C7.82 42.59,15.48 48,24.38 48z" fill="#34A853"></path><path d="M11.18 28.962c-.49-1.44-.77-3-.77-4.602s.28-3.162.77-4.602V14.04H3.85C2.17 17.2,1.25 20.73,1.25 24.36s.92 7.16,2.6 10.32l7.33-5.718z" fill="#FBBC05"></path><path d="M24.38 9.6c3.49 0 6.6.98 9.076 3.33l6.41-6.41C36.31 2.33 30.86 0 24.38 0 15.48 0 7.82 5.41,3.85 14.04l7.33 5.718c1.86-5.592 7.06-9.722 13.2-9.722z" fill="#EA4335"></path></svg>
                                 Login dengan Akun Google
                             </button>
-                            <p className="text-center text-xs text-gray-500 mt-2">Gunakan akun @sekolah</p>
+                            <p className="text-center text-xs text-gray-500 mt-2">
+                               {config.googleWorkspaceDomain
+                                    ? `Gunakan akun @${config.googleWorkspaceDomain}`
+                                    : 'Gunakan akun institusi Anda'}
+                            </p>
                         </div>
                         
                         <div className="relative">
