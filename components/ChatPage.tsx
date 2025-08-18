@@ -18,6 +18,8 @@ interface ChatPageProps {
   onLogout: () => void;
 }
 
+const CHAT_HISTORY_KEY = 'chat_history_v1';
+
 const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -41,8 +43,28 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
     }
   }, [messages]);
 
+  // Effect for initialization and loading chat history
   useEffect(() => {
     const initializeApp = async () => {
+      // 1. Try to load from localStorage
+      const savedMessagesRaw = localStorage.getItem(CHAT_HISTORY_KEY);
+      if (savedMessagesRaw) {
+        try {
+          const savedMessages = JSON.parse(savedMessagesRaw);
+          if (Array.isArray(savedMessages) && savedMessages.length > 0) {
+            setMessages(savedMessages);
+            // Check status silently in the background to update indicators
+            fetch('/api/status').then(res => res.json()).then(setSystemStatus).catch(e => console.error("Silent status check failed", e));
+            setIsInitialized(true); // App is ready with history
+            return; // Stop here, initialization is done
+          }
+        } catch (e) {
+          console.error("Failed to parse chat history, starting fresh.", e);
+          localStorage.removeItem(CHAT_HISTORY_KEY); // Clear corrupted data
+        }
+      }
+
+      // 2. If no history, do the original initialization flow
       setMessages([
           {
             role: MessageRole.MODEL,
@@ -85,6 +107,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
 
     initializeApp();
   }, [user.name]);
+
+  // Effect to save messages to localStorage whenever they change
+  useEffect(() => {
+    // Only save when the app is initialized. This prevents saving intermediate
+    // states like the "checking connection..." message.
+    if (isInitialized) {
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
+    }
+  }, [messages, isInitialized]);
+
 
   const handleSendMessage = async (inputText: string) => {
     if (!inputText.trim() || isLoading || !isInitialized) return;
@@ -171,7 +203,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         {isLoading && (
           <div className="flex justify-start items-center space-x-3">
              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-200 dark:bg-gray-700 flex items-center justify-center">
-               <svg className="w-6 h-6 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="http://www.w3.org/2000/svg" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+               <svg className="w-6 h-6 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
              </div>
              <div className="bg-slate-200 dark:bg-gray-700 p-3 rounded-lg flex items-center space-x-2">
                 <div className="w-2 h-2 bg-slate-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
