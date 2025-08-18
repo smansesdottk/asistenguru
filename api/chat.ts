@@ -97,6 +97,7 @@ function normalizeClassName(name: string | null | undefined): string {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
@@ -279,13 +280,27 @@ Jangan mengarang informasi.`;
       history: history,
     });
     
-    const result = await chat.sendMessage({ message: userMessage.text });
+    // Set headers for streaming
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Transfer-Encoding', 'chunked');
     
-    return res.status(200).json({ text: result.text });
+    const resultStream = await chat.sendMessageStream({ message: userMessage.text });
+    
+    for await (const chunk of resultStream) {
+      if(chunk.text) {
+        res.write(chunk.text);
+      }
+    }
+    
+    res.end();
 
   } catch (error) {
     console.error("Error in chat function:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-    return res.status(500).json({ error: errorMessage });
+    // If headers are not sent, send a proper error response.
+    // Otherwise, we can't do much as the stream has started.
+    if (!res.headersSent) {
+      return res.status(500).json({ error: errorMessage });
+    }
   }
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import type { ChatMessage, UserProfile, PublicConfig } from '../types';
 import { MessageRole } from '../types';
@@ -126,8 +125,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
       text: inputText,
     };
 
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    // Add user message and a placeholder for AI's response
+    setMessages(prevMessages => [
+        ...prevMessages, 
+        userMessage, 
+        { role: MessageRole.MODEL, text: '' }
+    ]);
     setIsLoading(true);
 
     try {
@@ -136,32 +139,58 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ messages: newMessages }),
+        // Send the history *before* the new user message
+        body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        const errorData = await response.json().catch(() => ({ error: `Request gagal dengan status ${response.status}`}));
         if(response.status === 401) {
-          // If session expired, force logout
           alert("Sesi Anda telah berakhir. Silakan login kembali.");
           onLogout();
           return;
         }
-        throw new Error(data.error || `Request gagal dengan status ${response.status}`);
+        throw new Error(errorData.error);
       }
       
-      const data = await response.json();
-      const aiMessage: ChatMessage = {
-        role: MessageRole.MODEL,
-        text: data.text,
-      };
-      setMessages((prevMessages) => [...prevMessages, aiMessage]);
+      if (!response.body) {
+        throw new Error("Response body is empty.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        const chunk = decoder.decode(value, { stream: !done });
+        
+        if (chunk) {
+          setMessages(prevMessages => {
+            const updatedMessages = [...prevMessages];
+            const lastMessage = updatedMessages[updatedMessages.length - 1];
+            if (lastMessage && lastMessage.role === MessageRole.MODEL) {
+                lastMessage.text += chunk;
+            }
+            return updatedMessages;
+          });
+        }
+      }
+
     } catch (error) {
-      const errorMessage: ChatMessage = {
-        role: MessageRole.MODEL,
-        text: error instanceof Error ? `Maaf, terjadi kesalahan: ${error.message}` : 'Maaf, terjadi kesalahan yang tidak diketahui.',
-      };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      const errorMessageText = error instanceof Error ? `Maaf, terjadi kesalahan: ${error.message}` : 'Maaf, terjadi kesalahan yang tidak diketahui.';
+      setMessages(prevMessages => {
+          const updatedMessages = [...prevMessages];
+          const lastMessage = updatedMessages[updatedMessages.length - 1];
+           if (lastMessage && lastMessage.role === MessageRole.MODEL) {
+              lastMessage.text = errorMessageText;
+           } else {
+             // If for some reason the placeholder doesn't exist, add an error message
+             updatedMessages.push({ role: MessageRole.MODEL, text: errorMessageText });
+           }
+          return updatedMessages;
+      });
     } finally {
       setIsLoading(false);
     }
@@ -194,6 +223,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6"
       >
         {messages.map((msg, index) => (
+          // Don't render the last empty message if we are loading
+          (isLoading && index === messages.length - 1 && msg.text === '') ? null :
           <ChatMessageBubble 
             key={index} 
             message={msg} 
@@ -203,7 +234,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         {isLoading && (
           <div className="flex justify-start items-center space-x-3">
              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-200 dark:bg-gray-700 flex items-center justify-center">
-               <svg className="w-6 h-6 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+               <svg className="w-6 h-6 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="http://www.w3.org/2000/svg" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
              </div>
              <div className="bg-slate-200 dark:bg-gray-700 p-3 rounded-lg flex items-center space-x-2">
                 <div className="w-2 h-2 bg-slate-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
