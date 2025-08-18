@@ -6,6 +6,7 @@ import ChatInput from './ChatInput';
 import StatusIndicator from './StatusIndicator';
 import Sidebar from './Sidebar';
 import MenuIcon from './icons/MenuIcon';
+import PromptStarters from './PromptStarters';
 
 type Status = 'checking' | 'connected' | 'error' | 'unconfigured';
 interface StatusDetail {
@@ -28,6 +29,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [promptStarters, setPromptStarters] = useState<string[]>([]);
+  const [isLoadingStarters, setIsLoadingStarters] = useState(true);
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
@@ -43,6 +46,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
     if (chatContainerRef.current) {
         chatContainerRef.current.scrollTo({
             top: chatContainerRef.current.scrollHeight,
+            behavior: 'smooth'
         });
     }
   }, [conversations, activeConversationId]);
@@ -107,9 +111,36 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
       localStorage.removeItem(CHAT_HISTORY_KEY);
     }
   }, [conversations]);
-
+  
   const activeConversation = conversations.find(c => c.id === activeConversationId);
   const activeMessages = activeConversation?.messages ?? [];
+
+  // Fetch prompt starters when starting a new chat
+  useEffect(() => {
+    const fetchPromptStarters = async () => {
+      setIsLoadingStarters(true);
+      try {
+        const response = await fetch('/api/prompt-starters');
+        if (response.ok) {
+          const data = await response.json();
+          setPromptStarters(data.questions || []);
+        } else {
+           setPromptStarters([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch prompt starters:", error);
+        setPromptStarters([]);
+      } finally {
+        setIsLoadingStarters(false);
+      }
+    };
+    
+    // Fetch only if it's a new chat (no active messages) and not currently loading a response
+    if (activeMessages.length === 0 && !isLoading) {
+      fetchPromptStarters();
+    }
+  }, [activeMessages.length, isLoading]);
+
 
   const handleNewChat = () => {
     setActiveConversationId(null);
@@ -202,12 +233,15 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         setConversations(prev =>
           prev.map(c => {
             if (c.id === currentConversationId) {
-              const updatedMessages = [...c.messages];
-              updatedMessages[updatedMessages.length - 1] = {
+               // Create a new messages array for immutability
+              const newMessages = [...c.messages];
+              // Update the last message (the bot's response)
+              newMessages[newMessages.length - 1] = {
                 role: MessageRole.MODEL,
                 text: accumulatedText,
               };
-              return { ...c, messages: updatedMessages };
+               // Return a new conversation object
+              return { ...c, messages: newMessages };
             }
             return c;
           })
@@ -239,8 +273,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
   };
   
   const getWelcomeMessage = useCallback(() => {
-    if (conversations.length > 0 && activeConversationId) return null; // History exists, no welcome message
-
     const isSheetsConnected = systemStatus.sheets.status === 'connected';
     const isGeminiConnected = systemStatus.gemini.status === 'connected';
 
@@ -251,7 +283,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
       text += `Ada beberapa masalah koneksi:\n- Data: ${systemStatus.sheets.message}\n- API: ${systemStatus.gemini.message}\n\nFungsionalitas mungkin terbatas.`;
     }
     return { role: MessageRole.MODEL, text };
-  }, [conversations.length, activeConversationId, systemStatus, user.name]);
+  }, [systemStatus, user.name]);
 
 
   return (
@@ -292,12 +324,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         >
           {activeMessages.length === 0 && !isLoading && (
             <div className="flex justify-center items-center h-full">
-                <div className="text-center text-slate-500 dark:text-slate-400">
-                    {getWelcomeMessage() ? 
-                      <ChatMessageBubble message={getWelcomeMessage()!} onDelete={() => {}} /> :
-                      <p>Mulai percakapan baru dengan mengetik di bawah.</p>
-                    }
-                </div>
+                <PromptStarters 
+                    prompts={promptStarters}
+                    onSelectPrompt={handleSendMessage}
+                    isLoading={isLoadingStarters}
+                />
             </div>
           )}
           {activeMessages.map((msg, index) => (
