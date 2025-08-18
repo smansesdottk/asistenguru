@@ -42,6 +42,15 @@ Aplikasi ini dirancang sebagai **Progressive Web App** (PWA), yang berarti Anda 
 
 Setelah diinstal, aplikasi dapat diluncurkan langsung dari layar utama seperti aplikasi lainnya.
 
+## 🎨 Mengganti Logo Aplikasi
+
+Logo aplikasi ini dikontrol oleh dua file SVG di folder root proyek:
+
+- `icon.svg`: Digunakan sebagai ikon utama untuk PWA (saat diinstal di layar utama) dan ikon sentuh Apple. Logo ini harus berbentuk persegi agar terlihat bagus.
+- `favicon.svg`: Digunakan sebagai ikon kecil yang muncul di tab browser (favicon). Pastikan logo ini tetap jelas saat ditampilkan dalam ukuran yang sangat kecil.
+
+Untuk mengganti logo, cukup ganti konten file `icon.svg` dan `favicon.svg` di **folder root proyek** dengan file SVG Anda sendiri. Pastikan nama filenya tetap sama.
+
 ## 🚀 Panduan Deployment
 
 ### Metode 1: Tombol "Deploy to Vercel" (Sangat Direkomendasikan & Anti Gagal)

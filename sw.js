@@ -5,6 +5,7 @@ const URLS_TO_CACHE = [
   '/bundle.js',
   '/index.css',
   '/icon.svg',
+  '/favicon.svg',
   '/manifest.json'
 ];
 

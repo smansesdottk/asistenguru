@@ -48,10 +48,30 @@ async function performAiActionWithRetry<T>(action: (ai: GoogleGenAI) => Promise<
     throw new Error("Semua koneksi API sedang sibuk karena batas penggunaan telah tercapai. Silakan coba lagi dalam satu menit.");
 }
 
-async function getSchoolDataSchema(): Promise<Record<string, string[]>> {
+/**
+ * Helper function to get a random subset of an array.
+ * @param arr The array to sample from.
+ * @param count The number of samples to return.
+ * @returns An array containing a random subset of the original array.
+ */
+function getRandomSamples<T>(arr: T[], count: number): T[] {
+  if (arr.length <= count) {
+    return arr;
+  }
+  // Create a shuffled copy of the array and take the first 'count' elements.
+  const shuffled = [...arr].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+}
+
+/**
+ * Fetches school data (from cache or network) and extracts the schema (headers) and
+ * a few random sample rows to provide better context to the AI.
+ * @returns A record mapping sheet names to their schema and sample data.
+ */
+async function getSchoolDataContext(): Promise<Record<string, { headers: string[]; samples: any[] }>> {
     const now = Date.now();
     if (!schoolDataCache || (now - schoolDataCache.timestamp > CACHE_DURATION_MS)) {
-        console.log("Cache is stale or empty for schema. Fetching new school data...");
+        console.log("Cache is stale or empty for context. Fetching new school data...");
         const sheetUrlsString = process.env.GOOGLE_SHEET_CSV_URLS || '';
         const sheetUrls = sheetUrlsString.split(',').map(url => url.trim()).filter(Boolean);
         if (sheetUrls.length === 0) {
@@ -77,18 +97,25 @@ async function getSchoolDataSchema(): Promise<Record<string, string[]>> {
             timestamp: now
         };
     } else {
-        console.log("Using cached school data for schema.");
+        console.log("Using cached school data for context.");
     }
 
-    const schema: Record<string, string[]> = {};
+    const context: Record<string, { headers: string[]; samples: any[] }> = {};
     for (const [name, csvData] of Object.entries(schoolDataCache.data)) {
         if (csvData) {
-            const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true, preview: 1 });
-            schema[name] = parsed.meta.fields || [];
+            const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
+            if (parsed.data.length > 0 && parsed.meta.fields) {
+                const samples = getRandomSamples(parsed.data, 3);
+                context[name] = {
+                    headers: parsed.meta.fields,
+                    samples: samples
+                };
+            }
         }
     }
-    return schema;
+    return context;
 }
+
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'GET') {
@@ -97,18 +124,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const schema = await getSchoolDataSchema();
-        const schemaString = JSON.stringify(schema, null, 2);
+        const dataContext = await getSchoolDataContext();
+        const dataContextString = JSON.stringify(dataContext, null, 2);
 
         const prompt = `
 Anda adalah AI yang bertugas membuat contoh pertanyaan untuk "Asisten Guru AI".
-Berdasarkan skema data CSV berikut, buatlah 4 contoh pertanyaan yang beragam, relevan, dan bermanfaat yang mungkin ditanyakan oleh seorang guru.
-Pastikan pertanyaan tersebut praktis dan dapat dijawab langsung dari kolom data yang tersedia.
-Hindari pertanyaan yang terlalu umum atau terlalu spesifik yang mungkin tidak ada datanya.
-Fokus pada pertanyaan tentang siswa, kelas, pelanggaran, dan data guru.
+Berdasarkan skema data (headers) DAN beberapa baris contoh data acak (samples) berikut, buatlah 4 contoh pertanyaan yang beragam, relevan, dan bermanfaat yang mungkin ditanyakan oleh seorang guru.
+PENTING: Gunakan nilai-nilai yang ada di dalam 'samples' untuk membuat pertanyaan Anda lebih akurat. Misalnya, jika Anda melihat nama kelas "X 1" di sampel, gunakan nama kelas itu dalam pertanyaan Anda, jangan mengarang nama kelas seperti "10A".
 
-Skema Data:
-${schemaString}
+Konteks Data (Skema dan Sampel):
+${dataContextString}
 
 KEMBALIKAN HANYA dalam format JSON dengan struktur: { "questions": ["pertanyaan 1", "pertanyaan 2", "pertanyaan 3", "pertanyaan 4"] }
 `;

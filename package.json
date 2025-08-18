@@ -6,7 +6,7 @@
   "author": "A. Indra Malik - SMAN11MKS",
   "scripts": {
     "dev": "vercel dev",
-    "build": "esbuild index.tsx --bundle --outfile=public/bundle.js --platform=browser --sourcemap && copyfiles index.html index.css manifest.json sw.js icon.svg public"
+    "build": "esbuild index.tsx --bundle --outfile=public/bundle.js --platform=browser --sourcemap && copyfiles index.html index.css manifest.json sw.js icon.svg favicon.svg public"
   },
   "engines": {
     "node": "20.x"
