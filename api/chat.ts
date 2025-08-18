@@ -63,7 +63,62 @@ let schoolDataCache: SchoolDataCache | null = null;
 const CACHE_DURATION_MS = 10 * 60 * 1000; // Cache valid for 10 minutes
 // --- END: Caching Implementation ---
 
+// Rotates through available API keys. State is maintained between invocations.
 let keyIndex = 0;
+
+/**
+ * A wrapper function to perform a Gemini API action with automatic key rotation and retry logic for rate limits.
+ * @param action A function that takes a GoogleGenAI client instance and returns a Promise with the result of the API call.
+ * @returns The result of the successful API call.
+ * @throws Throws an error if a non-retriable error occurs, or a user-friendly error if all keys are rate-limited.
+ */
+async function performAiActionWithRetry<T>(action: (ai: GoogleGenAI) => Promise<T>): Promise<T> {
+    const apiKeysString = process.env.GEMINI_API_KEYS || '';
+    const apiKeys = apiKeysString.split(',').map(k => k.trim()).filter(Boolean);
+    if (apiKeys.length === 0) {
+      throw new Error("GEMINI_API_KEYS environment variable is not configured or empty on Vercel.");
+    }
+
+    const initialKeyIndex = keyIndex;
+    let lastError: any = new Error("No API keys were available or tried.");
+
+    for (let i = 0; i < apiKeys.length; i++) {
+        const currentKeyIndex = (initialKeyIndex + i) % apiKeys.length;
+        const apiKey = apiKeys[currentKeyIndex];
+        
+        try {
+            console.log(`Attempting AI action with key index: ${currentKeyIndex}`);
+            const ai = new GoogleGenAI({ apiKey });
+            const result = await action(ai);
+            
+            // Success! Update the global keyIndex for the next request to start with the next key.
+            keyIndex = (currentKeyIndex + 1) % apiKeys.length;
+            return result;
+
+        } catch (error) {
+            lastError = error;
+            const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
+            // Check for common rate limit error signatures from the Gemini API.
+            const isRateLimitError = errorMessage.includes('429') || errorMessage.includes('resource_exhausted') || errorMessage.includes('quota');
+
+            if (isRateLimitError) {
+                console.log(`Key index ${currentKeyIndex} is rate-limited. Trying next key...`);
+                // Continue to the next key in the loop.
+            } else {
+                // It's a different, non-retriable error (e.g., invalid key, server error), so we should fail fast.
+                console.error(`Non-retriable error with key index ${currentKeyIndex}. Failing fast.`, error);
+                // Update keyIndex so the next request doesn't re-use the potentially bad key.
+                keyIndex = (currentKeyIndex + 1) % apiKeys.length;
+                throw error; // Rethrow the original error.
+            }
+        }
+    }
+
+    // If the loop completes, it means all keys were rate-limited.
+    console.warn("All available API keys are currently rate-limited.");
+    throw new Error("Semua koneksi API sedang sibuk karena batas penggunaan telah tercapai. Silakan coba lagi dalam satu menit.");
+}
+
 
 /**
  * Normalizes a class name string to a standard format for reliable comparison.
@@ -120,12 +175,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!messages || !Array.isArray(messages) || messages.length === 0 || !userMessage) {
       throw new Error('Invalid request body: "messages" array is required.');
     }
-
-    const apiKeysString = process.env.GEMINI_API_KEYS || '';
-    const apiKeys = apiKeysString.split(',').map(k => k.trim()).filter(Boolean);
-    if (apiKeys.length === 0) {
-      throw new Error("GEMINI_API_KEYS environment variable is not configured or empty on Vercel.");
-    }
     
     // Fetch data from cache or source
     const now = Date.now();
@@ -160,34 +209,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log("Using cached school data.");
     }
 
-    // Rotate API key
-    const apiKey = apiKeys[keyIndex];
-    keyIndex = (keyIndex + 1) % apiKeys.length;
-    const ai = new GoogleGenAI({ apiKey });
-
     // --- START: Smart Two-Step AI Flow ---
     let finalSystemInstruction: string;
     let finalSchoolData: string;
 
     try {
       // Step 1: Intent Extraction - Find the class name
-      const intentResponse = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: `Analyze the user's message to see if they are asking for student data from a specific class (Rombel). If they are, extract the exact class name. If they are not asking about a specific class, return null for the className. User message: "${userMessage.text}"`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              className: {
-                type: Type.STRING,
-                description: 'The specific class name mentioned by the user, for example "X 1" or "XI 6".',
-                nullable: true,
+      const intentResponse = await performAiActionWithRetry(async (ai) =>
+        ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: `Analyze the user's message to see if they are asking for student data from a specific class (Rombel). If they are, extract the exact class name. If they are not asking about a specific class, return null for the className. User message: "${userMessage.text}"`,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                className: {
+                  type: Type.STRING,
+                  description: 'The specific class name mentioned by the user, for example "X 1" or "XI 6".',
+                  nullable: true,
+                },
               },
             },
           },
-        },
-      });
+        })
+      );
 
       const intentResult = JSON.parse(intentResponse.text ?? '{}');
       const targetClassName = intentResult?.className;
@@ -274,17 +320,18 @@ Jangan mengarang informasi.`;
         parts: [{ text: msg.text }],
       }));
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: { systemInstruction: finalPrompt },
-      history: history,
-    });
-    
     // Set headers for streaming
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
     
-    const resultStream = await chat.sendMessageStream({ message: userMessage.text });
+    const resultStream = await performAiActionWithRetry(async (ai) => {
+        const chat = ai.chats.create({
+          model: 'gemini-2.5-flash',
+          config: { systemInstruction: finalPrompt },
+          history: history,
+        });
+        return chat.sendMessageStream({ message: userMessage.text });
+    });
     
     for await (const chunk of resultStream) {
       if(chunk.text) {
@@ -301,6 +348,11 @@ Jangan mengarang informasi.`;
     // Otherwise, we can't do much as the stream has started.
     if (!res.headersSent) {
       return res.status(500).json({ error: errorMessage });
+    } else {
+      // If stream has started, try to write the error to the stream before ending.
+      // This might not always be visible to the client depending on how it's handled.
+      res.write(`\n\n--- ERROR ---\n${errorMessage}`);
+      res.end();
     }
   }
 }
