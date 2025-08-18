@@ -44,101 +44,88 @@ Setelah diinstal, aplikasi dapat diluncurkan langsung dari layar utama seperti a
 
 ## 🚀 Panduan Deployment
 
-Ada dua cara untuk men-deploy aplikasi ini ke Vercel. **Pilih salah satu metode di bawah ini.** Anda tidak perlu melakukan keduanya. Metode integrasi Git adalah yang paling mudah dan direkomendasikan untuk sebagian besar pengguna.
+### Metode 1: Tombol "Deploy to Vercel" (Sangat Direkomendasikan & Anti Gagal)
+
+Ini adalah cara termudah dan tercepat untuk men-deploy aplikasi. Anda akan dipandu melalui proses penyiapan otomatis.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fais-sman11mks%2Fasisten-guru-ai-vercel&env=SCHOOL_NAME_FULL,SCHOOL_NAME_SHORT,APP_VERSION,APP_BASE_URL,GEMINI_API_KEYS,GOOGLE_SHEET_CSV_URLS,ADMIN_PASSWORD,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_WORKSPACE_DOMAIN&project-name=asisten-guru-ai&repository-name=asisten-guru-ai)
+
+#### Langkah 1: Persiapan Wajib (Siapkan Ini Dulu!)
+
+Sebelum menekan tombol, pastikan Anda sudah memiliki semua informasi berikut. Ini akan membuat prosesnya lancar.
+
+1.  **Akun GitHub**: Anda memerlukannya untuk login ke Vercel dan membuat salinan (fork) proyek.
+2.  **Kunci API Gemini**: Dapatkan dari [Google AI Studio](https://aistudio.google.com/app/apikey). Anda bisa membuat beberapa kunci dan memisahkannya dengan koma.
+3.  **URL Google Sheet**: Buka Google Sheet Anda, lalu pilih `File > Bagikan > Publikasikan di web`. Pilih `Seluruh Dokumen` dan format `Comma-separated values (.csv)`. Salin URL yang dihasilkan. Ulangi untuk semua sheet yang diperlukan.
+4.  **Kredensial Google OAuth (Opsional)**: Jika ingin menggunakan login Google, siapkan dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+    *   **Google Client ID**
+    *   **Google Client Secret**
+    *   **Google Workspace Domain** (contoh: `sekolahanda.sch.id`)
+
+#### Langkah 2: Proses Deployment di Vercel
+
+1.  **Klik Tombol "Deploy"** di atas.
+2.  **Login & Buat Proyek**: Anda akan diarahkan ke Vercel. Login dengan akun GitHub Anda. Vercel akan meminta Anda untuk membuat repositori Git baru (ini adalah salinan proyek untuk Anda). Beri nama dan klik **"Create"**.
+3.  **Isi Environment Variables**: Ini adalah bagian terpenting. Vercel akan menampilkan formulir untuk mengisi semua konfigurasi.
+    *   Isi semua variabel sesuai data yang sudah Anda siapkan.
+    *   **UNTUK `APP_BASE_URL`**: Karena Anda belum tahu URL finalnya, isi dengan placeholder sementara, contoh: `https://placeholder.com`. **Kita akan memperbaikinya di Langkah 4.**
+    *   **UNTUK `JWT_SECRET`**: Buat string acak yang sangat panjang dan aman (64+ karakter). Anda bisa menggunakan generator kata sandi online.
+    *   **VARIABEL GOOGLE (Opsional)**: Jika Anda tidak ingin menggunakan login Google, biarkan `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_WORKSPACE_DOMAIN` **kosong**. Aplikasi akan otomatis beralih ke mode "Hanya Admin".
+4.  **Klik "Deploy"**: Setelah semua terisi, klik "Deploy". Vercel akan memulai proses build. Tunggu beberapa menit hingga selesai.
+
+#### Langkah 3: Dapatkan URL Produksi Anda
+
+Setelah deployment selesai, Vercel akan memberikan Anda URL produksi (contoh: `https://nama-proyek-anda.vercel.app`). **Selamat! Aplikasi Anda sudah online.**
+
+#### Langkah 4: Konfigurasi Final (Wajib Agar Login Berfungsi!)
+
+Sekarang kita perbaiki placeholder yang tadi.
+
+1.  **Perbarui `APP_BASE_URL` di Vercel**:
+    *   Di dasbor proyek Vercel Anda, buka tab **"Settings" > "Environment Variables"**.
+    *   Cari variabel `APP_BASE_URL`, klik menu tiga titik, lalu pilih **"Edit"**.
+    *   Ganti nilai placeholder (`https://placeholder.com`) dengan **URL produksi asli** yang baru saja Anda dapatkan dari Vercel. **PENTING: Jangan sertakan garis miring (`/`) di akhir URL.**
+    *   Klik **"Save"**.
+    *   Vercel akan meminta Anda untuk men-deploy ulang agar perubahan berlaku. Buka tab **"Deployments"**, cari deployment terbaru, klik menu tiga titik, dan pilih **"Redeploy"**.
+
+2.  **Perbarui URI Pengalihan Google (Jika Menggunakan Login Google)**:
+    *   Kembali ke [Google Cloud Console](https://console.cloud.google.com/apis/credentials) Anda.
+    *   Buka kredensial OAuth 2.0 Anda.
+    *   Di bagian **"Authorized redirect URIs"**, tambahkan URL callback produksi Anda: `https://NAMA-PROYEK-ANDA.vercel.app/api/auth-callback`. Ganti `NAMA-PROYEK-ANDA.vercel.app` dengan URL Anda.
+
+Selesai! Aplikasi Anda sekarang sepenuhnya terkonfigurasi dan siap digunakan.
 
 ---
 
-### Metode 1: Menggunakan Integrasi Git (Cara Termudah & Direkomendasikan)
+### Metode 2: Deployment Manual (Alternatif)
 
-Metode ini menghubungkan repositori GitHub Anda langsung ke Vercel. Setiap kali Anda melakukan `push` ke branch utama, Vercel akan secara otomatis men-deploy versi terbaru.
+Gunakan metode ini jika Anda lebih suka melakukan setup langkah demi langkah secara manual. Pilih salah satu dari dua opsi di bawah ini.
 
-#### Langkah 1: Persiapan Awal
+#### Opsi A: Menggunakan Integrasi Git
 
-1.  **Fork Repositori**: Buat *fork* dari repositori ini ke akun GitHub Anda.
-2.  **Klon Repositori**: Klon repositori yang sudah Anda *fork* ke komputer lokal.
-    ```bash
-    git clone https://github.com/NAMA_ANDA/nama-repositori.git
-    cd nama-repositori
-    ```
-3.  **Konfigurasi Variabel**: Buka file `env.txt`. Isi semua variabel di bagian **"PENGATURAN WAJIB"**.
-    - **Sangat Penting**: Pastikan Anda mengisi `APP_BASE_URL` dengan URL lengkap situs Anda setelah di-deploy (misalnya, `https://proyek-anda.vercel.app`). Ini wajib agar Login Google berfungsi. **Jangan sertakan garis miring (`/`) di akhir URL.**
-    - Jika Anda tidak mengisi variabel `GOOGLE_...`, aplikasi akan berjalan dalam mode **"Hanya Admin"**.
+Metode ini menghubungkan repositori GitHub Anda langsung ke Vercel. Setiap kali Anda melakukan `push`, Vercel akan otomatis men-deploy versi terbaru.
 
-#### Langkah 2: Deploy ke Vercel
+1.  **Fork & Klon**: Buat *fork* dari repositori ini ke akun GitHub Anda, lalu klon ke komputer lokal.
+2.  **Deploy ke Vercel**: Login ke Vercel, pilih **"Add New... -> Project"**, dan impor repositori yang sudah Anda *fork*.
+3.  **Konfigurasi Environment Variables**: Vercel akan meminta Anda untuk menambahkan variabel lingkungan. Salin semua isi dari file `env.txt`, dan isi nilainya satu per satu di dasbor Vercel.
+4.  **Deploy**: Klik "Deploy". Setelah selesai, Vercel akan memberikan URL produksi.
+5.  **Konfigurasi Final**: Ikuti **Langkah 4** dari "Metode 1" di atas untuk memperbarui `APP_BASE_URL` dan URI pengalihan Google.
 
-1.  **Login ke Vercel**: Buka [vercel.com](https://vercel.com) dan login menggunakan akun GitHub Anda.
-2.  **Impor Proyek**: Di dasbor Vercel, klik **"Add New... -> Project"**. Pilih repositori yang sudah Anda *fork* tadi.
-3.  **Konfigurasi Proyek**: Vercel akan secara otomatis mendeteksi konfigurasi dari `vercel.json` dan `package.json`. Anda tidak perlu mengubah pengaturan build.
-4.  **Tambahkan Environment Variables**: Buka bagian **"Environment Variables"**. Salin dan tempel semua variabel dari file `env.txt` Anda yang sudah diisi.
-5.  **Deploy**: Klik tombol **"Deploy"**. Vercel akan memulai proses build dan deployment. Setelah selesai, Anda akan mendapatkan URL unik untuk situs Anda.
+#### Opsi B: Menggunakan Vercel CLI
 
-#### Langkah 3: Konfigurasi Final Google OAuth (Jika Digunakan)
+Metode ini untuk men-deploy langsung dari terminal tanpa menghubungkan repositori Git.
 
-Jika Anda mengisi variabel Google, lakukan langkah ini:
-1.  **Buka Google Cloud Console**: Kembali ke halaman kredensial OAuth 2.0 Anda.
-2.  **Tambahkan URI Pengalihan Resmi**: Di bagian **"Authorized redirect URIs"**, tambahkan URL callback produksi Anda: `https://NAMA-SITUS-ANDA.vercel.app/api/auth-callback`.
-
----
-
-### Metode 2: Menggunakan Vercel CLI (Untuk Pengguna Lanjutan)
-
-Metode ini memungkinkan Anda untuk men-deploy langsung dari terminal di komputer Anda tanpa perlu menghubungkan repositori Git.
-
-#### Langkah 1: Persiapan Awal
-
-1.  **Unduh Kode**: Unduh atau klon repositori ini ke komputer lokal Anda.
-2.  **Instal Vercel CLI & Dependensi**: Buka terminal di folder proyek dan jalankan:
-    ```bash
-    npm install -g vercel
-    npm install
-    ```
-3.  **Login ke Vercel**: Di terminal, login ke akun Vercel Anda.
-    ```bash
-    vercel login
-    ```
-4.  **Konfigurasi `.env.local`**: Buat salinan dari `env.txt`, ganti namanya menjadi `.env.local`, dan isi semua variabelnya. File ini akan digunakan untuk proses build lokal.
-
-#### Langkah 2: Hubungkan Proyek dan Atur Variabel di Vercel
-
-1.  **Hubungkan Proyek**: Jalankan perintah berikut di terminal:
-    ```bash
-    vercel
-    ```
-    CLI akan menanyakan beberapa hal. Jawab seperti ini untuk setup awal:
-    - `? Set up and deploy “/path/to/your/project”?` → **Y** (Yes)
-    - `? Which scope do you want to deploy to?` → Pilih akun pribadi Anda.
-    - `? Link to an existing project?` → **N** (No)
-    - `? What’s your project’s name?` → (Otomatis) Tekan Enter.
-    - `? In which directory is your code located?` → (Otomatis, `./`) Tekan Enter.
-    - `Auto-detected Project Settings... Override?` → **N** (No)
-    
-    Tunggu hingga deployment pertama selesai. URL produksi Anda akan ditampilkan. **Penting:** Salin URL ini dan tempelkan ke variabel `APP_BASE_URL` di file `.env.local` Anda.
-
-2.  **Tambahkan Environment Variables ke Vercel**: Anda harus menambahkan semua variabel dari `.env.local` ke Vercel satu per satu melalui terminal.
-    ```bash
-    # Contoh:
-    vercel env add SCHOOL_NAME_FULL "Nama Sekolah Saya"
-    vercel env add GEMINI_API_KEYS "kunci_api_anda_disini"
-    vercel env add JWT_SECRET "kunci_rahasia_anda_yang_sangat_panjang"
-    
-    # Lakukan ini untuk SEMUA variabel dari file .env.local Anda
-    ```
-
-#### Langkah 3: Build dan Deploy
-
-1.  **Build Proyek untuk Produksi**: Perintah ini akan membuat folder `.vercel/output` yang berisi file-file yang siap di-deploy.
+1.  **Instalasi**: Unduh kode proyek, lalu instal Vercel CLI (`npm install -g vercel`) dan dependensi proyek (`npm install`).
+2.  **Login**: Jalankan `vercel login` di terminal.
+3.  **Buat `.env.local`**: Salin `env.txt` menjadi `.env.local` dan isi semua nilainya.
+4.  **Hubungkan Proyek**: Jalankan `vercel` untuk menghubungkan folder lokal Anda ke proyek baru di Vercel.
+5.  **Tambahkan Variabel ke Vercel**: Tambahkan semua variabel dari `.env.local` ke Vercel menggunakan perintah `vercel env add NAMA_VARIABEL "nilainya"`.
+6.  **Build & Deploy**:
     ```bash
     vercel build --prod
-    ```
-2.  **Deploy Proyek yang Sudah Di-build**: Perintah ini akan mengunggah isi dari folder `.vercel/output` ke Vercel.
-    ```bash
     vercel deploy --prebuilt --prod
     ```
-    Setelah selesai, aplikasi Anda akan diperbarui di URL produksi.
-
-#### Langkah 4: Konfigurasi Final Google OAuth (Jika Digunakan)
-
-Langkah ini sama dengan metode Git. Pastikan URI redirect di Google Cloud Console sudah benar: `https://NAMA-SITUS-ANDA.vercel.app/api/auth-callback`.
+7.  **Konfigurasi Final**: Ikuti **Langkah 4** dari "Metode 1" di atas.
 
 ---
 
