@@ -168,12 +168,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         
         if (chunk) {
           setMessages(prevMessages => {
-            const updatedMessages = [...prevMessages];
-            const lastMessage = updatedMessages[updatedMessages.length - 1];
-            if (lastMessage && lastMessage.role === MessageRole.MODEL) {
-                lastMessage.text += chunk;
-            }
-            return updatedMessages;
+            // Immutable update: map to a new array and create a new object for the last message
+            return prevMessages.map((msg, index) => {
+              if (index === prevMessages.length - 1 && msg.role === MessageRole.MODEL) {
+                return { ...msg, text: msg.text + chunk };
+              }
+              return msg;
+            });
           });
         }
       }
@@ -234,7 +235,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         {isLoading && (
           <div className="flex justify-start items-center space-x-3">
              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-200 dark:bg-gray-700 flex items-center justify-center">
-               <svg className="w-6 h-6 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="http://www.w3.org/2000/svg" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+               <svg className="w-6 h-6 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
              </div>
              <div className="bg-slate-200 dark:bg-gray-700 p-3 rounded-lg flex items-center space-x-2">
                 <div className="w-2 h-2 bg-slate-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
