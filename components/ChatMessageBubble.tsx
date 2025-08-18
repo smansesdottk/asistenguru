@@ -1,33 +1,115 @@
-import React from 'react';
+
+import React, { useMemo, useState } from 'react';
 import type { ChatMessage } from '../types';
 import { MessageRole } from '../types';
 import UserIcon from './icons/UserIcon';
 import BotIcon from './icons/BotIcon';
+import MarkdownTable from './MarkdownTable';
+import CopyIcon from './icons/CopyIcon';
+import ShareIcon from './icons/ShareIcon';
+import DeleteIcon from './icons/DeleteIcon';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
+  onDelete: () => void;
 }
 
-const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message }) => {
-  const isUser = message.role === MessageRole.USER;
+// Helper component for simple markdown (**bold**)
+const SimpleMarkdownRenderer: React.FC<{ text: string }> = ({ text }) => {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={index}>{part.slice(2, -2)}</strong>;
+        }
+        return part;
+      })}
+    </>
+  );
+};
 
-  const wrapperClasses = isUser
-    ? 'flex justify-end items-start gap-3'
-    : 'flex justify-start items-start gap-3';
-  const bubbleClasses = isUser
-    ? 'bg-blue-600 text-white'
-    : 'bg-slate-200 text-slate-800';
+
+const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+
+  const isUser = message.role === MessageRole.USER;
+  const showShareButton = typeof navigator.share === 'function';
+
+  const wrapperClasses = isUser ? 'flex-row-reverse' : '';
+  const bubbleClasses = isUser ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-800';
   const icon = isUser ? <UserIcon /> : <BotIcon />;
 
+  const tableRegex = /((?:\|\s*.*?\s*\|(?:\r?\n|\r|$))+)/g;
+
+  const contentParts = useMemo(() => {
+    if (isUser || !message.text) {
+      return [{ type: 'text', content: message.text }];
+    }
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = tableRegex.exec(message.text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', content: message.text.substring(lastIndex, match.index) });
+      }
+      parts.push({ type: 'table', content: match[0] });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < message.text.length) {
+      parts.push({ type: 'text', content: message.text.substring(lastIndex) });
+    }
+    return parts.length > 0 ? parts : [{ type: 'text', content: message.text }];
+  }, [message.text, isUser]);
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.text).then(() => {
+      setCopyStatus('copied');
+      setTimeout(() => setCopyStatus('idle'), 2000);
+    });
+  };
+
+  const handleShare = async () => {
+    if (showShareButton) {
+      try {
+        await navigator.share({ title: 'Pesan dari Asisten Guru AI', text: message.text });
+      } catch (error) {
+        console.error('Gagal membagikan:', error);
+      }
+    }
+  };
+
   return (
-    <div className={wrapperClasses}>
-      {!isUser && <div className="flex-shrink-0">{icon}</div>}
+    <div 
+      className={`flex items-start gap-3 group ${wrapperClasses}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="flex-shrink-0">{icon}</div>
       <div
         className={`max-w-md md:max-w-lg lg:max-w-2xl px-4 py-3 rounded-2xl shadow-sm ${bubbleClasses}`}
       >
-        <p className="whitespace-pre-wrap">{message.text}</p>
+        {contentParts.map((part, index) => {
+          if (part.type === 'table') {
+            return <div key={index} className="bg-white rounded-lg p-2 my-2"><MarkdownTable tableString={part.content} /></div>;
+          }
+          return part.content.trim() ? <p key={index} className="whitespace-pre-wrap"><SimpleMarkdownRenderer text={part.content} /></p> : null;
+        })}
       </div>
-      {isUser && <div className="flex-shrink-0">{icon}</div>}
+      <div className={`flex items-center self-center transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+         <button onClick={handleCopy} title={copyStatus === 'copied' ? 'Disalin!' : 'Salin Pesan'} className="p-2 text-slate-500 hover:text-slate-800">
+            <CopyIcon />
+        </button>
+        {showShareButton && (
+          <button onClick={handleShare} title="Bagikan" className="p-2 text-slate-500 hover:text-slate-800">
+            <ShareIcon />
+          </button>
+        )}
+        <button onClick={onDelete} title="Hapus" className="p-2 text-slate-500 hover:text-red-500">
+          <DeleteIcon />
+        </button>
+      </div>
     </div>
   );
 };

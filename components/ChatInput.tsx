@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -8,6 +7,17 @@ interface ChatInputProps {
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
   const [inputText, setInputText] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset tinggi untuk menghitung scrollHeight baru dengan benar
+      textarea.style.height = 'auto';
+      // Atur tinggi sesuai dengan konten
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [inputText]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,11 +40,12 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
       className="flex items-center space-x-3"
     >
       <textarea
+        ref={textareaRef}
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Ketik pertanyaan Anda di sini... (Shift+Enter untuk baris baru)"
-        className="flex-1 p-3 border border-slate-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+        className="flex-1 py-2 px-3 border border-slate-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none transition max-h-28"
         rows={1}
         disabled={isLoading}
       />

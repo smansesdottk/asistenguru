@@ -1,130 +1,102 @@
 # Asisten Guru AI
 
-Asisten Guru AI adalah aplikasi web modern yang dirancang untuk memberdayakan para guru dengan menyediakan akses cepat dan percakapan ke data sekolah yang relevan. Dibangun dengan tumpukan teknologi serverless menggunakan Netlify Functions dan didukung oleh model bahasa canggih dari Google Gemini, aplikasi ini dapat menjawab pertanyaan terkait siswa, guru, jadwal, dan informasi sekolah lainnya secara instan.
+Asisten Guru AI adalah aplikasi web modern yang dirancang untuk memberdayakan para guru dengan menyediakan akses cepat dan percakapan ke data sekolah yang relevan. Dibuat oleh A. Indra Malik (SMAN 11 Makassar). Dibangun dengan tumpukan teknologi serverless menggunakan Vercel dan didukung oleh model bahasa canggih dari Google Gemini, aplikasi ini dapat menjawab pertanyaan terkait siswa, guru, jadwal, dan informasi sekolah lainnya secara instan.
 
 ## ✨ Fitur Utama
 
 - **Antarmuka Percakapan**: Tanyakan apa pun dalam bahasa alami dan dapatkan jawaban yang relevan dari AI.
 - **Akses Data Terpusat**: Mengambil data secara real-time dari beberapa Google Sheets, memastikan informasi selalu up-to-date.
-- **Keamanan Terjamin**:
-  - **Otentikasi Google OAuth 2.0**: Memastikan hanya pengguna dengan akun Google Workspace sekolah yang dapat login.
-  - **Bypass Login Admin**: Akses admin khusus menggunakan kata sandi untuk pemeliharaan atau demo.
+- **Keamanan Fleksibel**:
+  - **Otentikasi Google OAuth 2.0 (Opsional)**: Jika dikonfigurasi, dapat memastikan hanya pengguna dengan akun Google Workspace institusi yang dapat login.
+  - **Mode Login Hanya Admin**: Jika kredensial Google tidak diatur, aplikasi secara otomatis beralih ke mode login aman hanya dengan kata sandi admin.
   - **Sesi Aman (JWT)**: Menggunakan JSON Web Tokens yang disimpan dalam cookie `HttpOnly` untuk manajemen sesi yang aman.
-- **Arsitektur Serverless**: Seluruh aplikasi, baik frontend maupun backend, berjalan di Netlify, menghilangkan kebutuhan untuk mengelola server sendiri.
+- **Arsitektur Serverless**: Seluruh aplikasi, baik frontend maupun backend, berjalan di Vercel, menghilangkan kebutuhan untuk mengelola server sendiri.
 - **Rotasi Kunci API**: Mendukung banyak kunci API Gemini dan merotasinya secara otomatis untuk mendistribusikan beban dan menghindari batas kuota.
 - **Status Sistem**: Indikator real-time untuk memeriksa konektivitas ke layanan penting seperti Google Sheets dan Gemini API.
+- **Dapat Diinstal (PWA)**: Dapat diinstal di perangkat seluler (Android/iOS) atau desktop langsung dari browser untuk akses cepat seperti aplikasi native, lengkap dengan dukungan offline.
 
 ## 🚀 Tumpukan Teknologi
 
 - **Frontend**: React, TypeScript, Tailwind CSS
-- **Backend**: Netlify Functions (Serverless TypeScript)
+- **Backend**: Vercel Serverless Functions (TypeScript)
 - **Model AI**: Google Gemini API (`gemini-2.5-flash`)
 - **Sumber Data**: Google Sheets (diakses sebagai CSV)
 - **Autentikasi**: `jose` untuk JWT, Google OAuth 2.0
-- **Platform**: Netlify
+- **Platform**: Vercel
 
-## 👨‍💻 Kreator
+## 📲 Instalasi di Perangkat (PWA)
 
-Aplikasi ini dirancang dan dikembangkan oleh **A. Indra Malik** dari SMAN 11 Makassar.
+Aplikasi ini dirancang sebagai **Progressive Web App** (PWA), yang berarti Anda dapat menginstalnya di perangkat Anda untuk pengalaman yang lebih cepat dan terintegrasi, bahkan saat offline.
 
-## 📂 Struktur Proyek
+### Android (via Google Chrome)
+1. Buka aplikasi di browser Google Chrome.
+2. Ketuk tombol menu (tiga titik vertikal) di pojok kanan atas.
+3. Pilih **"Instal aplikasi"** atau **"Tambahkan ke layar utama"**.
+4. Konfirmasi instalasi, dan ikon aplikasi akan muncul di layar utama Anda.
 
-```
-/
-├── components/         # Komponen React (UI)
-│   ├── ChatPage.tsx
-│   └── LoginPage.tsx
-├── netlify/
-│   ├── functions/      # Kode backend (Netlify Functions)
-│   │   ├── auth-*.ts   # Fungsi untuk autentikasi
-│   │   ├── chat.ts     # Endpoint utama untuk chat
-│   │   ├── config.ts   # Endpoint untuk konfigurasi publik
-│   │   └── status.ts   # Endpoint untuk status sistem
-│   └── util/
-│       └── auth.ts     # Logika inti JWT dan manajemen cookie
-├── App.tsx             # Komponen root yang mengatur routing login/chat
-├── index.html          # File HTML utama
-├── package.json        # Dependensi proyek
-├── env.txt             # Template untuk environment variables
-└── README.md           # Anda sedang membacanya
-```
+### iOS (via Safari)
+1. Buka aplikasi di browser Safari.
+2. Ketuk tombol **Bagikan** (ikon kotak dengan panah ke atas) di bilah bawah.
+3. Gulir ke bawah dan pilih **"Tambahkan ke Layar Utama"** (*Add to Home Screen*).
+4. Beri nama aplikasi jika perlu, lalu ketuk **"Tambah"** (*Add*).
 
-## 🛠️ Menjalankan Aplikasi
+Setelah diinstal, aplikasi dapat diluncurkan langsung dari layar utama seperti aplikasi lainnya.
 
-### 1. Prasyarat
+## 🚀 Panduan Deployment Cepat (via Git)
 
-- **Node.js**: Pastikan Anda memiliki Node.js versi 18 atau lebih baru.
-- **Netlify CLI**: Instal secara global untuk menjalankan server development lokal dan men-deploy.
-  ```bash
-  npm install -g netlify-cli
-  ```
+Ini adalah metode termudah dan direkomendasikan untuk men-deploy aplikasi Anda ke Vercel menggunakan integrasi Git.
 
-### 2. Konfigurasi Lingkungan (Environment)
+### Langkah 1: Persiapan Awal
 
-Aplikasi ini membutuhkan beberapa kunci rahasia dan konfigurasi untuk berjalan.
-
-1.  **Salin Template**: Salin konten dari `env.txt` ke dalam file baru bernama `.env` di direktori root proyek Anda.
-2.  **Isi Variabel**: Buka file `.env` yang baru dibuat dan isi semua variabel. Lihat petunjuk di dalam file `env.txt` untuk detail tentang setiap variabel. Ini termasuk:
-    - Informasi sekolah (`SCHOOL_NAME_FULL`, dll.)
-    - Kunci API Gemini (`GEMINI_API_KEYS`)
-    - URL Google Sheet (`GOOGLE_SHEET_CSV_URLS`)
-    - Kredensial Google OAuth (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
-    - Domain Workspace (`GOOGLE_WORKSPACE_DOMAIN`)
-    - Kata Sandi Admin (`ADMIN_PASSWORD`)
-    - Rahasia JWT (`JWT_SECRET`)
-3.  **Konfigurasi Google OAuth**: Pastikan Anda telah mengonfigurasi **Authorized redirect URIs** di Google Cloud Console Anda untuk menyertakan URL callback development lokal:
-    - `http://localhost:8888/.netlify/functions/auth-callback`
-
-### 3. Menjalankan Secara Lokal
-
-Setelah file `.env` Anda dikonfigurasi, Anda dapat memulai server development lokal.
-
-```bash
-netlify dev
-```
-
-Perintah ini akan:
-- Membaca variabel dari file `.env` Anda.
-- Menjalankan server frontend dan semua fungsi backend secara bersamaan.
-- Membuka aplikasi di browser Anda, biasanya di `http://localhost:8888`.
-
-### 4. Deployment ke Netlify
-
-Ada dua cara utama untuk men-deploy aplikasi Anda.
-
-#### A. Menggunakan Netlify CLI (Direkomendasikan)
-
-Ini adalah cara tercepat untuk setup awal.
-
-1.  **Login ke Netlify**:
+1.  **Fork Repositori**: Buat *fork* dari repositori ini ke akun GitHub Anda.
+2.  **Klon Repositori**: Klon repositori yang sudah Anda *fork* ke komputer lokal.
     ```bash
-    netlify login
+    git clone https://github.com/NAMA_ANDA/nama-repositori.git
+    cd nama-repositori
     ```
-2.  **Hubungkan Proyek**:
+3.  **Instal Dependensi**: Jalankan `npm install` untuk mengunduh semua paket yang diperlukan.
     ```bash
-    netlify link
+    npm install
     ```
-    Pilih opsi untuk membuat situs baru.
-3.  **Impor Environment Variables**: Impor semua konfigurasi dari file `env.txt` Anda langsung ke dasbor Netlify.
-    ```bash
-    netlify env:import env.txt
-    ```
-4.  **Konfigurasi Google OAuth (Produksi)**: Jangan lupa untuk menambahkan URL callback produksi Anda ke Google Cloud Console:
-    - `https://nama-situs-anda.netlify.app/.netlify/functions/auth-callback`
-5.  **Deploy**: Lakukan deployment pertama Anda.
-    ```bash
-    netlify deploy --prod
-    ```
+4.  **Konfigurasi Variabel**: Buka file `env.txt`. Isi semua variabel di bagian **"PENGATURAN WAJIB"**.
+    - **Sangat Penting**: Pastikan Anda mengisi `APP_BASE_URL` dengan URL lengkap situs Anda setelah di-deploy (misalnya, `https://proyek-anda.vercel.app`). Ini wajib agar Login Google berfungsi. **Jangan sertakan garis miring (`/`) di akhir URL.**
+    - Jika Anda tidak mengisi variabel `GOOGLE_...`, aplikasi akan berjalan dalam mode **"Hanya Admin"**.
 
-#### B. Menggunakan Git (Alur Kerja Berkelanjutan)
+### Langkah 2: Deploy ke Vercel
 
-Setelah setup awal, ini adalah cara terbaik untuk pembaruan.
+1.  **Login ke Vercel**: Buka [vercel.com](https://vercel.com) dan login menggunakan akun GitHub Anda.
+2.  **Impor Proyek**: Di dasbor Vercel, klik **"Add New... -> Project"**. Pilih repositori yang sudah Anda *fork* tadi.
+3.  **Konfigurasi Proyek**: Vercel akan secara otomatis mendeteksi konfigurasi dari `vercel.json` dan `package.json`. Anda tidak perlu mengubah pengaturan build.
+4.  **Tambahkan Environment Variables**: Buka bagian **"Environment Variables"**. Salin dan tempel semua variabel dari file `env.txt` Anda yang sudah diisi.
+5.  **Deploy**: Klik tombol **"Deploy"**. Vercel akan memulai proses build dan deployment. Setelah selesai, Anda akan mendapatkan URL unik untuk situs Anda.
 
-1.  **Setup di Netlify UI**:
-    - Hubungkan repositori Git Anda ke situs Netlify.
-    - Atur *Build command* ke `#` (kosong, karena tidak ada proses build) dan *Publish directory* ke direktori root Anda.
-    - Buka **Site configuration > Build & deploy > Environment variables** dan tambahkan semua variabel dari `env.txt` Anda secara manual.
-2.  **Deploy**: Cukup `git push` ke branch utama Anda. Netlify akan secara otomatis men-deploy setiap perubahan baru.
+### Langkah 3: Konfigurasi Final Google OAuth (Jika Digunakan)
+
+Jika Anda mengisi variabel Google di `env.txt`, lakukan langkah ini:
+
+1.  **Gunakan URL Produksi**: Pastikan `APP_BASE_URL` Anda sudah benar.
+2.  **Buka Google Cloud Console**: Kembali ke halaman kredensial OAuth 2.0 Anda.
+3.  **Tambahkan URI Pengalihan Resmi**: Di bagian **"Authorized redirect URIs"**, tambahkan URL callback produksi Anda dengan format:
+    -   `https://NAMA-SITUS-ANDA.vercel.app/api/auth-callback`
+    -   URL ini harus sama persis dengan `APP_BASE_URL` Anda ditambah `/api/auth-callback`.
+
+**Selesai!** Aplikasi Anda sekarang sudah berjalan sepenuhnya di Vercel. Setiap `git push` ke branch utama akan secara otomatis men-deploy versi baru.
 
 ---
-Dibuat dengan ❤️ untuk pendidikan.
+
+## 🛠️ Menjalankan Secara Lokal
+
+1.  **Prasyarat**:
+    - Node.js (v20+)
+    - Vercel CLI: `npm install -g vercel`
+2.  **Login Vercel CLI**:
+    ```bash
+    vercel login
+    ```
+3.  **Konfigurasi `.env`**: Buat salinan dari `env.txt` yang sudah diisi, dan ganti namanya menjadi `.env.local` di folder root proyek. Pastikan `APP_BASE_URL` diisi dengan `http://localhost:3000`.
+4.  **Konfigurasi Google OAuth Lokal (Jika Digunakan)**: Di Google Cloud Console, tambahkan URI redirect berikut untuk development: `http://localhost:3000/api/auth-callback`
+5.  **Jalankan Server Development**:
+    ```bash
+    vercel dev
+    ```
+    Aplikasi akan terbuka di `http://localhost:3000`.

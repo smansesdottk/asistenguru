@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { UserProfile, PublicConfig } from './types';
 import LoginPage from './components/LoginPage';
@@ -12,8 +13,8 @@ const App: React.FC = () => {
     setIsLoading(true);
     try {
       const [sessionResponse, configResponse] = await Promise.all([
-        fetch('/.netlify/functions/auth-verify'),
-        fetch('/.netlify/functions/config'),
+        fetch('/api/auth-verify'),
+        fetch('/api/config'),
       ]);
 
       if (sessionResponse.ok) {
@@ -50,7 +51,7 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('/.netlify/functions/auth-logout', { method: 'POST' });
+      await fetch('/api/auth-logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {

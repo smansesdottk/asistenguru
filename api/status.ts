@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import type { Handler } from "@netlify/functions";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 type Status = 'connected' | 'error' | 'unconfigured' | 'checking';
 
@@ -14,7 +14,7 @@ interface StatusResponse {
   gemini: StatusDetail;
 }
 
-const handler: Handler = async () => {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   const response: StatusResponse = {
     sheets: { status: 'unconfigured', message: 'Variabel GOOGLE_SHEET_CSV_URLS belum diatur.' },
     gemini: { status: 'unconfigured', message: 'Variabel GEMINI_API_KEYS belum diatur.' },
@@ -63,11 +63,5 @@ const handler: Handler = async () => {
      response.gemini = { status: 'unconfigured', message: 'Kunci API Gemini belum dikonfigurasi.' };
   }
 
-  return {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(response),
-  };
-};
-
-export { handler };
+  return res.status(200).json(response);
+}

@@ -40,4 +40,6 @@ export interface PublicConfig {
   schoolNameShort?: string;
   appVersion?: string;
   googleClientId?: string;
+  isGoogleLoginConfigured?: boolean;
+  appBaseUrl?: string;
 }

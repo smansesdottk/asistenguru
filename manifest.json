@@ -1,0 +1,16 @@
+{
+  "name": "Asisten Guru AI",
+  "short_name": "Asisten AI",
+  "description": "Aplikasi chat AI untuk membantu guru mengakses data sekolah dengan cepat. Didukung oleh Gemini, aplikasi ini dapat menjawab pertanyaan tentang siswa, nilai, dan informasi guru lainnya.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import type { ChatMessage, UserProfile, PublicConfig } from '../types';
 import { MessageRole } from '../types';
@@ -50,7 +51,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
       ]);
       
       try {
-        const statusResponse = await fetch('/.netlify/functions/status');
+        const statusResponse = await fetch('/api/status');
         if (!statusResponse.ok) {
             const errorText = await statusResponse.text();
             throw new Error(`Server returned status: ${statusResponse.status}. Pesan: ${errorText}`);
@@ -65,13 +66,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         if (isSheetsConnected && isGeminiConnected) {
           initialMessage = 'Koneksi berhasil! Saya sudah terhubung dengan data sekolah. Ada yang bisa saya bantu?';
         } else {
-          initialMessage = `Halo! Ada beberapa masalah koneksi:\n- Google Sheets: ${statusData.sheets.message}\n- Gemini API: ${statusData.gemini.message}\n\nMohon periksa konfigurasi environment variables di Netlify. Fungsionalitas mungkin terbatas.`;
+          initialMessage = `Halo! Ada beberapa masalah koneksi:\n- Google Sheets: ${statusData.sheets.message}\n- Gemini API: ${statusData.gemini.message}\n\nMohon periksa konfigurasi environment variables di Vercel. Fungsionalitas mungkin terbatas.`;
         }
         setMessages([{ role: MessageRole.MODEL, text: initialMessage }]);
 
       } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          const finalMessage = `Gagal memeriksa status sistem: ${errorMessage}. Pastikan backend berjalan dengan benar dan environment variables sudah diatur di Netlify.`;
+          const finalMessage = `Gagal memeriksa status sistem: ${errorMessage}. Pastikan backend berjalan dengan benar dan environment variables sudah diatur di Vercel.`;
           setSystemStatus({
               sheets: { status: 'error', message: 'Gagal menghubungi server status.' },
               gemini: { status: 'error', message: 'Gagal menghubungi server status.' },
@@ -98,7 +99,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/.netlify/functions/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,17 +135,21 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
     }
   };
 
+  const handleDeleteMessage = (messageIndex: number) => {
+    setMessages(currentMessages => currentMessages.filter((_, index) => index !== messageIndex));
+  };
+
   return (
     <div className="flex flex-col h-screen bg-slate-50 font-sans">
-      <header className="bg-white shadow-md p-4 border-b border-slate-200 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-            <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full" />
-            <div>
-                <h1 className="text-lg font-bold text-slate-800">{user.name}</h1>
-                <p className="text-xs text-slate-500">{user.email}</p>
+      <header className="bg-white shadow-md p-4 border-b border-slate-200 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+            <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full flex-shrink-0" />
+            <div className="min-w-0">
+                <h1 className="text-lg font-bold text-slate-800 truncate">{user.name}</h1>
+                <p className="text-xs text-slate-500 truncate">{user.email}</p>
             </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
             <StatusIndicator status={systemStatus} />
             <button onClick={onLogout} className="text-xs text-blue-600 hover:underline">
                 Logout
@@ -157,12 +162,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6"
       >
         {messages.map((msg, index) => (
-          <ChatMessageBubble key={index} message={msg} />
+          <ChatMessageBubble 
+            key={index} 
+            message={msg} 
+            onDelete={() => handleDeleteMessage(index)} 
+          />
         ))}
         {isLoading && (
           <div className="flex justify-start items-center space-x-3">
              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
-               <svg className="w-6 h-6 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+               <svg className="w-6 h-6 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="http://www.w3.org/2000/svg" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
              </div>
              <div className="bg-slate-200 p-3 rounded-lg flex items-center space-x-2">
                 <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
@@ -176,7 +185,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
       <footer className="bg-white p-4 border-t border-slate-200">
         <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading || !isInitialized} />
          <p className="text-center text-xs text-slate-400 mt-2">
-          Dibuat oleh A. Indra Malik - SMAN11MKS | Versi {config.appVersion || 'N/A'}
+          Asisten Guru AI | Versi {config.appVersion || 'N/A'} | Author : A. Indra Malik - sman11mks
         </p>
       </footer>
     </div>

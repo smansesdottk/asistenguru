@@ -25,18 +25,12 @@ const StatusDot: React.FC<{ status: Status }> = ({ status }) => {
 
 
 const StatusItem: React.FC<{ name: string, statusDetail: StatusDetail }> = ({ name, statusDetail }) => {
-  const statusTextMap: Record<Status, string> = {
-    checking: 'Memeriksa...',
-    connected: 'Terhubung',
-    error: 'Gagal',
-    unconfigured: 'Belum Dikonfigurasi',
-  };
-  
+  // Teks status dihapus sesuai permintaan, indikator warna sudah cukup.
+  // Pesan lengkap tersedia saat hover dari atribut title.
   return (
      <div className="flex items-center gap-2 text-xs" title={statusDetail.message}>
       <StatusDot status={statusDetail.status} />
-      <span className="font-medium text-slate-600">{name}:</span>
-      <span className="text-slate-500">{statusTextMap[statusDetail.status]}</span>
+      <span className="font-medium text-slate-600">{name}</span>
     </div>
   );
 };
@@ -44,9 +38,9 @@ const StatusItem: React.FC<{ name: string, statusDetail: StatusDetail }> = ({ na
 
 const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status }) => {
   return (
-    <div className="flex justify-center items-center gap-4 mt-2">
-        <StatusItem name="Google Sheets" statusDetail={status.sheets} />
-        <StatusItem name="Gemini API" statusDetail={status.gemini} />
+    <div className="flex flex-col items-end sm:flex-row sm:items-center sm:gap-4">
+        <StatusItem name="Data" statusDetail={status.sheets} />
+        <StatusItem name="API" statusDetail={status.gemini} />
     </div>
   );
 };
