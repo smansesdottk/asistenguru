@@ -9,6 +9,13 @@ export interface ChatMessage {
   text: string;
 }
 
+export interface ChatConversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: string; // ISO string date
+}
+
 export interface Teacher {
   id: number;
   name: string;
