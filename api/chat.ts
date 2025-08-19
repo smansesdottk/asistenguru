@@ -69,6 +69,37 @@ function getPairedDataSources(): { name: string; url: string }[] {
 }
 // --- END: Data Source Parsing Logic ---
 
+// --- START: Relationship Parsing Logic (NEW NAME-BASED FORMAT) ---
+interface SheetLink {
+    sheetName: string;
+    columnName: string;
+}
+
+/**
+ * Parses the SHEET_RELATIONSHIPS environment variable string using the new format.
+ * Example input: "SISWA.NISN=PRESENSI SHALAT.NISN, SISWA.Nama=PELANGGARAN.Nama"
+ * @param relationships The relationship string from environment variables.
+ * @returns An array of relationship groups, where each group is an array of SheetLinks.
+ */
+function parseSheetRelationships(relationships: string | undefined): SheetLink[][] {
+    if (!relationships) return [];
+    try {
+        return relationships.split(',')
+            .map(group => group.trim().split('=')
+                .map(part => {
+                    const parts = part.trim().split('.');
+                    if (parts.length < 2) return null; // Must have at least Sheet.Column
+                    const sheetName = parts[0].trim().toUpperCase();
+                    const columnName = parts.slice(1).join('.').trim(); // Handle column names with dots
+                    return { sheetName, columnName };
+                }).filter(Boolean) as SheetLink[]
+            ).filter(group => group.length > 1);
+    } catch (error) {
+        console.error("Error parsing SHEET_RELATIONSHIPS. Please check format.", error);
+        return [];
+    }
+}
+// --- END: Relationship Parsing Logic ---
 
 // Self-contained types to avoid path issues in deployment
 enum MessageRole {
@@ -266,51 +297,74 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const intentResult = JSON.parse(intentResponse.text ?? '{}');
       const targetClassName = intentResult?.className;
       
-      if (targetClassName && schoolDataCache.data['SISWA']) {
+      const siswaSheetName = "SISWA";
+      if (targetClassName && schoolDataCache.data[siswaSheetName]) {
         const normalizedTargetClassName = normalizeClassName(targetClassName);
         console.log(`Class name detected: "${targetClassName}". Normalized to: "${normalizedTargetClassName}". Filtering data...`);
         
-        // Step 2: Code-based Filtering based on the user's explicit schema
-        const studentsCsv = schoolDataCache.data['SISWA'];
-        const students = Papa.parse(studentsCsv, { header: true, skipEmptyLines: true }).data as any[];
-
-        // 1. Filter Students by "Rombel Saat Ini" using normalization
+        const studentsCsv = schoolDataCache.data[siswaSheetName];
+        const students = Papa.parse(studentsCsv, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data as any[];
         const filteredStudents = students.filter(s => normalizeClassName(s['Rombel Saat Ini']) === normalizedTargetClassName);
 
         if (filteredStudents.length > 0) {
             console.log(`Found ${filteredStudents.length} students in class "${targetClassName}". Filtering related data...`);
             
-            const studentNISNs = new Set(filteredStudents.map(s => s.NISN).filter(Boolean));
-            const studentNames = new Set(filteredStudents.map(s => s.Nama).filter(Boolean));
+            const focusedData: Record<string, string> = { [siswaSheetName]: Papa.unparse(filteredStudents) };
+            const relationships = process.env.SHEET_RELATIONSHIPS;
 
-            const focusedData: Record<string, string> = {
-                'SISWA': Papa.unparse(filteredStudents),
-            };
+            if (relationships) {
+                // --- NEW: Explicit Relationship Filtering (Name-based) ---
+                console.log("Using explicit SHEET_RELATIONSHIPS for advanced filtering.");
+                const parsedRelations = parseSheetRelationships(relationships);
+                const allSheetData: Record<string, any[]> = {};
 
-            // 2. Filter PRESENSI_SHALAT by NISN
-            if (schoolDataCache.data['PRESENSI SHALAT'] && studentNISNs.size > 0) {
-                const presensi = Papa.parse(schoolDataCache.data['PRESENSI SHALAT'], { header: true, skipEmptyLines: true }).data as any[];
-                const filteredPresensi = presensi.filter(p => studentNISNs.has(p.NISN));
-                if(filteredPresensi.length > 0) focusedData['PRESENSI SHALAT'] = Papa.unparse(filteredPresensi);
+                // Parse all sheets once for efficiency
+                for (const name in schoolDataCache.data) {
+                    allSheetData[name] = Papa.parse(schoolDataCache.data[name], { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data;
+                }
+
+                for (const group of parsedRelations) {
+                    const primaryLink = group.find(link => link.sheetName === siswaSheetName);
+                    if (!primaryLink) continue; // This group doesn't link to SISWA
+
+                    const primaryKeys = new Set(filteredStudents.map(s => s[primaryLink.columnName]).filter(Boolean));
+                    if (primaryKeys.size === 0) continue;
+
+                    for (const relatedLink of group) {
+                        if (relatedLink.sheetName === siswaSheetName) continue;
+                        if (!allSheetData[relatedLink.sheetName]) continue;
+
+                        const filteredRelatedData = allSheetData[relatedLink.sheetName].filter(row => primaryKeys.has(row[relatedLink.columnName]));
+                        if (filteredRelatedData.length > 0) {
+                            focusedData[relatedLink.sheetName] = Papa.unparse(filteredRelatedData);
+                            console.log(`Linked and filtered ${filteredRelatedData.length} rows for sheet: ${relatedLink.sheetName}`);
+                        }
+                    }
+                }
+            } else {
+                // --- FALLBACK: Implicit, Name-based Filtering ---
+                console.log("No SHEET_RELATIONSHIPS defined. Using implicit name-based filtering.");
+                const studentNISNs = new Set(filteredStudents.map(s => s.NISN).filter(Boolean));
+                const studentNames = new Set(filteredStudents.map(s => s.Nama).filter(Boolean));
+
+                if (schoolDataCache.data['PRESENSI SHALAT'] && studentNISNs.size > 0) {
+                    const presensi = Papa.parse(schoolDataCache.data['PRESENSI SHALAT'], { header: true, skipEmptyLines: true }).data as any[];
+                    const filteredPresensi = presensi.filter(p => studentNISNs.has(p.NISN));
+                    if(filteredPresensi.length > 0) focusedData['PRESENSI SHALAT'] = Papa.unparse(filteredPresensi);
+                }
+                if (schoolDataCache.data['PELANGGARAN'] && studentNames.size > 0) {
+                     const pelanggaran = Papa.parse(schoolDataCache.data['PELANGGARAN'], { header: true, skipEmptyLines: true }).data as any[];
+                     const filteredPelanggaran = pelanggaran.filter(p => normalizeClassName(p.KELAS) === normalizedTargetClassName && studentNames.has(p.NAMA));
+                     if(filteredPelanggaran.length > 0) focusedData['PELANGGARAN'] = Papa.unparse(filteredPelanggaran);
+                }
             }
-
-            // 3. Filter PELANGGARAN by KELAS and NAMA
-            if (schoolDataCache.data['PELANGGARAN'] && studentNames.size > 0) {
-                 const pelanggaran = Papa.parse(schoolDataCache.data['PELANGGARAN'], { header: true, skipEmptyLines: true }).data as any[];
-                 const filteredPelanggaran = pelanggaran.filter(p => 
-                    normalizeClassName(p.KELAS) === normalizedTargetClassName && studentNames.has(p.NAMA)
-                 );
-                 if(filteredPelanggaran.length > 0) focusedData['PELANGGARAN'] = Papa.unparse(filteredPelanggaran);
-            }
-
-            // 4. Filter PEMBELAJARAN by "Nama Rombel"
+            // Filter PEMBELAJARAN (common to both methods)
             if (schoolDataCache.data['PEMBELAJARAN']) {
                 const pembelajaran = Papa.parse(schoolDataCache.data['PEMBELAJARAN'], { header: true, skipEmptyLines: true }).data as any[];
                 const filteredPembelajaran = pembelajaran.filter(p => normalizeClassName(p['Nama Rombel']) === normalizedTargetClassName);
                 if(filteredPembelajaran.length > 0) focusedData['PEMBELAJARAN'] = Papa.unparse(filteredPembelajaran);
             }
 
-            // Step 3: Focused Final Call
             finalSystemInstruction = `Anda adalah "Asisten Guru AI". Pengguna bertanya tentang kelas "${targetClassName}". Anda HARUS menggunakan HANYA data JSON yang sudah difilter di bawah ini untuk menjawab. Kunci JSON mewakili nama data (misal "SISWA") dan nilainya adalah string CSV. Jangan mengacu pada data lain. Sajikan data ini dalam format yang diminta pengguna (misalnya, tabel).`;
             finalSchoolData = JSON.stringify(focusedData, null, 2);
 

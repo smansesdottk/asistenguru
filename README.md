@@ -1,3 +1,4 @@
+
 # Asisten Guru AI
 
 Asisten Guru AI adalah aplikasi web modern yang dirancang untuk memberdayakan para guru dengan menyediakan akses cepat dan percakapan ke data sekolah yang relevan. Dibuat oleh A. Indra Malik (SMAN 11 Makassar). Dibangun dengan tumpukan teknologi serverless menggunakan Vercel dan didukung oleh model bahasa canggih dari Google Gemini, aplikasi ini dapat menjawab pertanyaan terkait siswa, guru, jadwal, dan informasi sekolah lainnya secara instan.
@@ -97,13 +98,34 @@ Ini adalah bagian terpenting. Di halaman "Configure Project", buka bagian **"Env
     *   **`ORGANIZATION_DATA_SOURCES` & `SHEET_NAMES`**: Pastikan urutan URL dan Nama sama persis.
     *   **Login Google (Opsional)**: Jika tidak ingin pakai login Google, biarkan `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_WORKSPACE_DOMAIN` **kosong**. Aplikasi akan otomatis beralih ke mode "Hanya Admin".
 
-#### Langkah 5: Mulai Deployment
+#### Langkah 5: (Opsional) Konfigurasi Hubungan Data
+
+Untuk meningkatkan akurasi AI, Anda bisa secara eksplisit memberitahu aplikasi bagaimana data Anda saling terhubung menggunakan variabel `SHEET_RELATIONSHIPS`. **Ini bersifat opsional. Jika Anda kosongkan, AI akan mencoba menebak hubungannya sendiri.**
+
+Format baru ini lebih mudah dibaca dan tahan terhadap perubahan (misalnya jika Anda memindahkan kolom di Google Sheet).
+
+-   **Tujuan**: Memberitahu sistem, misalnya, "Kolom 'NISN' di sheet 'SISWA' sama dengan kolom 'NISN' di sheet 'PRESENSI SHALAT'".
+-   **Format**: `NAMA_SHEET_1.NAMA_KOLOM_1=NAMA_SHEET_2.NAMA_KOLOM_2`. Jika ada lebih dari satu hubungan, pisahkan dengan koma.
+-   **Contoh Praktis**:
+    -   Misalkan `SHEET_NAMES` Anda berisi `SISWA,PELANGGARAN,PRESENSI SHALAT`.
+    -   Di sheet `SISWA`, Anda memiliki kolom `NISN` dan `Nama`.
+    -   Di sheet `PRESENSI SHALAT`, Anda punya kolom `NISN`.
+    -   Di sheet `PELANGGARAN`, Anda punya kolom `NAMA` (yang berisi nama siswa).
+    -   Untuk menghubungkan data ini, nilai `SHEET_RELATIONSHIPS` Anda adalah:
+        ```
+        SISWA.NISN=PRESENSI SHALAT.NISN,SISWA.Nama=PELANGGARAN.NAMA
+        ```
+-   **Penting**:
+    -   Nama sheet (`SISWA`) harus cocok dengan yang ada di `SHEET_NAMES` Anda.
+    -   Nama kolom (`NISN`, `Nama`, `NAMA`) harus **persis sama** dengan header kolom di file Google Sheet Anda.
+
+#### Langkah 6: Mulai Deployment
 
 Setelah semua variabel terisi, klik tombol **"Deploy"**. Vercel akan mulai membangun dan men-deploy aplikasi Anda. Proses ini mungkin memakan waktu beberapa menit.
 
 Setelah selesai, Vercel akan memberikan Anda URL produksi (contoh: `https://asistenguru-xxxx.vercel.app`). **Selamat, aplikasi Anda sudah online!** Namun, masih ada satu langkah terakhir yang krusial.
 
-#### Langkah 6: Konfigurasi Final (Wajib Agar Login Berfungsi!)
+#### Langkah 7: Konfigurasi Final (Wajib Agar Login Berfungsi!)
 
 Sekarang kita perbaiki placeholder `APP_BASE_URL` dan mengonfigurasi Google.
 
@@ -133,7 +155,7 @@ Metode ini mengotomatiskan proses penyalinan proyek dan penyiapan di Vercel. Ini
 2.  Anda akan diminta untuk login dengan akun GitHub Anda.
 3.  Vercel akan meminta Anda membuat repositori Git baru di akun Anda (ini adalah salinan dari proyek asli). Beri nama sesuai keinginan Anda, lalu klik **"Create"**.
 4.  Setelah itu, Anda akan langsung diarahkan ke halaman **"Configure Project"** di Vercel.
-5.  Sekarang, ikuti **Langkah 4, 5, dan 6** dari **Metode 1** di atas untuk mengisi *Environment Variables*, men-deploy, dan melakukan konfigurasi final. Prosesnya persis sama dari titik ini.
+5.  Sekarang, ikuti **Langkah 4, 5, 6, dan 7** dari **Metode 1** di atas untuk mengisi *Environment Variables*, men-deploy, dan melakukan konfigurasi final. Prosesnya persis sama dari titik ini.
 
 ---
 
@@ -151,7 +173,7 @@ Gunakan metode ini untuk men-deploy langsung dari terminal tanpa menghubungkan r
     vercel build --prod
     vercel deploy --prebuilt --prod
     ```
-7.  **Konfigurasi Final**: Ikuti **Langkah 6** dari "Metode 1" di atas untuk memperbarui `APP_BASE_URL` dan URI pengalihan Google.
+7.  **Konfigurasi Final**: Ikuti **Langkah 7** dari "Metode 1" di atas untuk memperbarui `APP_BASE_URL` dan URI pengalihan Google.
 
 ---
 
