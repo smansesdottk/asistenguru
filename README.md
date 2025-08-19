@@ -73,7 +73,7 @@ Sebelum memulai, pastikan Anda sudah memiliki semua informasi berikut. Ini akan 
 
 "Fork" adalah proses membuat salinan pribadi dari sebuah repositori. Ini memungkinkan Anda untuk memiliki versi proyek sendiri.
 
-1.  Buka halaman repositori proyek ini di GitHub: [https://github.com/ais-sman11mks/asisten-guru-ai-vercel](https://github.com/ais-sman11mks/asisten-guru-ai-vercel).
+1.  Buka halaman repositori proyek ini di GitHub: [https://github.com/smansesdottk/asistenguru](https://github.com/smansesdottk/asistenguru).
 2.  Di pojok kanan atas halaman, klik tombol **"Fork"**.
 3.  GitHub akan meminta Anda untuk mengonfirmasi. Anda bisa biarkan nama repositori tetap sama. Klik **"Create fork"**.
 4.  Sekarang Anda memiliki salinan repositori ini di bawah akun GitHub Anda.
@@ -82,7 +82,7 @@ Sebelum memulai, pastikan Anda sudah memiliki semua informasi berikut. Ini akan 
 
 1.  Buka [Vercel](https://vercel.com) dan login menggunakan akun GitHub Anda.
 2.  Di dasbor Vercel, klik **"Add New..." -> "Project"**.
-3.  Di halaman "Import Git Repository", Vercel akan menampilkan daftar repositori dari akun GitHub Anda. Pilih repositori `asisten-guru-ai` yang baru saja Anda fork, lalu klik **"Import"**.
+3.  Di halaman "Import Git Repository", Vercel akan menampilkan daftar repositori dari akun GitHub Anda. Pilih repositori `asistenguru` yang baru saja Anda fork, lalu klik **"Import"**.
 4.  Vercel akan secara otomatis mendeteksi bahwa ini adalah proyek React/Vercel Functions dan akan menampilkan halaman **"Configure Project"**.
 
 #### Langkah 4: Konfigurasi Environment Variables di Vercel
@@ -101,7 +101,7 @@ Ini adalah bagian terpenting. Di halaman "Configure Project", buka bagian **"Env
 
 Setelah semua variabel terisi, klik tombol **"Deploy"**. Vercel akan mulai membangun dan men-deploy aplikasi Anda. Proses ini mungkin memakan waktu beberapa menit.
 
-Setelah selesai, Vercel akan memberikan Anda URL produksi (contoh: `https://asisten-guru-ai-xxxx.vercel.app`). **Selamat, aplikasi Anda sudah online!** Namun, masih ada satu langkah terakhir yang krusial.
+Setelah selesai, Vercel akan memberikan Anda URL produksi (contoh: `https://asistenguru-xxxx.vercel.app`). **Selamat, aplikasi Anda sudah online!** Namun, masih ada satu langkah terakhir yang krusial.
 
 #### Langkah 6: Konfigurasi Final (Wajib Agar Login Berfungsi!)
 
@@ -123,7 +123,21 @@ Selesai! Aplikasi Anda sekarang sepenuhnya terkonfigurasi dan siap digunakan.
 
 ---
 
-### Metode 2: Deployment Manual via Vercel CLI (Alternatif)
+### Metode 2: Deployment Cepat dengan Tombol Vercel
+
+Metode ini mengotomatiskan proses penyalinan proyek dan penyiapan di Vercel. Ini lebih cepat tetapi memberi Anda sedikit kontrol atas nama repositori.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/smansesdottk/asistenguru)
+
+1.  Klik tombol **"Deploy with Vercel"** di atas.
+2.  Anda akan diminta untuk login dengan akun GitHub Anda.
+3.  Vercel akan meminta Anda membuat repositori Git baru di akun Anda (ini adalah salinan dari proyek asli). Beri nama sesuai keinginan Anda, lalu klik **"Create"**.
+4.  Setelah itu, Anda akan langsung diarahkan ke halaman **"Configure Project"** di Vercel.
+5.  Sekarang, ikuti **Langkah 4, 5, dan 6** dari **Metode 1** di atas untuk mengisi *Environment Variables*, men-deploy, dan melakukan konfigurasi final. Prosesnya persis sama dari titik ini.
+
+---
+
+### Metode 3: Deployment Manual via Vercel CLI (Alternatif)
 
 Gunakan metode ini untuk men-deploy langsung dari terminal tanpa menghubungkan repositori Git secara formal ke Vercel.
 
