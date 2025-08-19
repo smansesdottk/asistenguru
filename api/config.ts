@@ -1,4 +1,3 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { PublicConfig } from '../types';
 
@@ -7,8 +6,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     GOOGLE_CLIENT_ID, 
     GOOGLE_CLIENT_SECRET, 
     GOOGLE_WORKSPACE_DOMAIN,
-    SCHOOL_NAME_FULL,
-    SCHOOL_NAME_SHORT,
+    ORGANIZATION_NAME_FULL,
+    ORGANIZATION_NAME_SHORT,
     APP_VERSION,
     APP_BASE_URL
   } = process.env;
@@ -16,8 +15,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const isGoogleLoginConfigured = !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_WORKSPACE_DOMAIN && APP_BASE_URL);
 
   const config: PublicConfig = {
-    schoolNameFull: SCHOOL_NAME_FULL,
-    schoolNameShort: SCHOOL_NAME_SHORT,
+    schoolNameFull: ORGANIZATION_NAME_FULL,
+    schoolNameShort: ORGANIZATION_NAME_SHORT,
     appVersion: APP_VERSION,
     googleClientId: GOOGLE_CLIENT_ID,
     isGoogleLoginConfigured: isGoogleLoginConfigured,

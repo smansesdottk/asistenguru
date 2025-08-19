@@ -1,6 +1,27 @@
-
 import { GoogleGenAI } from "@google/genai";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+// --- START: Data Source Parsing Logic ---
+/**
+ * Parses ORGANIZATION_DATA_SOURCES and SHEET_NAMES environment variables.
+ * It pairs the URLs from the first variable with names from the second variable
+ * based on their order.
+ * @returns An array of objects, each with a 'name' and 'url'.
+ */
+function getPairedDataSources(): { name: string; url: string }[] {
+    const urlsString = process.env.ORGANIZATION_DATA_SOURCES || '';
+    // SHEET_NAMES is not needed for the status check, only the URLs.
+    const urls = urlsString.split(',').map(url => url.trim()).filter(Boolean);
+    if (urls.length === 0) {
+        return [];
+    }
+    // We only need the URL for the status check, name can be generic.
+    return urls.map((url, index) => ({
+        name: `DATA_${index + 1}`,
+        url: url
+    }));
+}
+// --- END: Data Source Parsing Logic ---
 
 type Status = 'connected' | 'error' | 'unconfigured' | 'checking';
 
@@ -16,21 +37,20 @@ interface StatusResponse {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const response: StatusResponse = {
-    sheets: { status: 'unconfigured', message: 'Variabel GOOGLE_SHEET_CSV_URLS belum diatur.' },
+    sheets: { status: 'unconfigured', message: 'Variabel ORGANIZATION_DATA_SOURCES belum diatur.' },
     gemini: { status: 'unconfigured', message: 'Variabel GEMINI_API_KEYS belum diatur.' },
   };
 
   const apiKeysString = process.env.GEMINI_API_KEYS || '';
   const apiKeys = apiKeysString.split(',').map(k => k.trim()).filter(Boolean);
   
-  const sheetUrlsString = process.env.GOOGLE_SHEET_CSV_URLS || '';
-  const sheetUrls = sheetUrlsString.split(',').map(url => url.trim()).filter(Boolean);
+  const sources = getPairedDataSources();
 
   // Check Google Sheet URL (hanya periksa URL pertama untuk kecepatan)
-  if (sheetUrls.length > 0) {
-    const firstUrl = sheetUrls[0];
+  if (sources.length > 0) {
+    const firstSource = sources[0];
     try {
-      const fetchResponse = await fetch(firstUrl);
+      const fetchResponse = await fetch(firstSource.url);
       if (fetchResponse.ok) {
         response.sheets = { status: 'connected', message: 'Koneksi ke Google Sheets berhasil.' };
       } else {
@@ -41,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       response.sheets = { status: 'error', message: `Gagal menghubungi URL Google Sheets pertama. Error: ${err}` };
     }
   } else {
-    response.sheets = { status: 'unconfigured', message: 'URL Google Sheets belum dikonfigurasi.' };
+    response.sheets = { status: 'unconfigured', message: 'URL Google Sheets (ORGANIZATION_DATA_SOURCES) belum dikonfigurasi.' };
   }
 
   // Check Gemini API Key (hanya periksa kunci pertama untuk kecepatan)

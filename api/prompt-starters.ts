@@ -3,6 +3,33 @@ import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Papa from "papaparse";
 
+// --- START: Data Source Parsing Logic ---
+/**
+ * Parses ORGANIZATION_DATA_SOURCES and SHEET_NAMES environment variables.
+ * It pairs the URLs from the first variable with names from the second variable
+ * based on their order.
+ * @returns An array of objects, each with a 'name' and 'url'.
+ */
+function getPairedDataSources(): { name: string; url: string }[] {
+    const urlsString = process.env.ORGANIZATION_DATA_SOURCES || '';
+    const namesString = process.env.SHEET_NAMES || '';
+
+    const urls = urlsString.split(',').map(url => url.trim()).filter(Boolean);
+    const names = namesString.split(',').map(name => name.trim().toUpperCase()).filter(Boolean);
+
+    if (urls.length === 0) {
+        return [];
+    }
+
+    return urls.map((url, index) => ({
+        // Use the name from SHEET_NAMES if available, otherwise generate a default name.
+        name: names[index] || `DATA_${index + 1}`,
+        url: url
+    }));
+}
+// --- END: Data Source Parsing Logic ---
+
+
 // --- START: Caching Implementation ---
 interface SchoolDataCache {
   data: Record<string, string>;
@@ -72,15 +99,14 @@ async function getSchoolDataContext(): Promise<Record<string, { headers: string[
     const now = Date.now();
     if (!schoolDataCache || (now - schoolDataCache.timestamp > CACHE_DURATION_MS)) {
         console.log("Cache is stale or empty for context. Fetching new school data...");
-        const sheetUrlsString = process.env.GOOGLE_SHEET_CSV_URLS || '';
-        const sheetUrls = sheetUrlsString.split(',').map(url => url.trim()).filter(Boolean);
-        if (sheetUrls.length === 0) {
-            throw new Error("GOOGLE_SHEET_CSV_URLS environment variable is not configured or empty.");
+        const sources = getPairedDataSources();
+
+        if (sources.length === 0) {
+            throw new Error("ORGANIZATION_DATA_SOURCES environment variable is not configured or empty.");
         }
         
-        const sheetNames = ["SISWA", "GURU", "PEGAWAI", "PEMBELAJARAN", "ROMBEL", "PTK", "PELANGGARAN", "PRESENSI_SHALAT", "PROFIL_SEKOLAH"];
-        const promises = sheetUrls.map(url => fetch(url).then(res => {
-            if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.statusText}`);
+        const promises = sources.map(source => fetch(source.url).then(res => {
+            if (!res.ok) throw new Error(`Failed to fetch ${source.url}: ${res.statusText}`);
             return res.text();
         }));
         
@@ -88,8 +114,8 @@ async function getSchoolDataContext(): Promise<Record<string, { headers: string[
         
         const fetchedSchoolData: Record<string, string> = {};
         csvDataArray.forEach((csv, index) => {
-            const name = sheetNames[index] || `DATA_${index + 1}`;
-            fetchedSchoolData[name] = csv;
+            const source = sources[index];
+            fetchedSchoolData[source.name] = csv;
         });
 
         schoolDataCache = {
@@ -135,7 +161,7 @@ PENTING: Gunakan nilai-nilai yang ada di dalam 'samples' untuk membuat pertanyaa
 Konteks Data (Skema dan Sampel):
 ${dataContextString}
 
-KEMBALIKAN HANYA dalam format JSON dengan struktur: { "questions": ["pertanyaan 1", "pertanyaan 2", "pertanyaan 3", "pertanyaan 4"] }
+KEMBALIKAN HANYA dalam format JSON denganstruktur: { "questions": ["pertanyaan 1", "pertanyaan 2", "pertanyaan 3", "pertanyaan 4"] }
 `;
 
         const response = await performAiActionWithRetry<GenerateContentResponse>(ai => 

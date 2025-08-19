@@ -57,7 +57,7 @@ Untuk mengganti logo, cukup ganti konten file `icon.svg` dan `favicon.svg` di **
 
 Ini adalah cara termudah dan tercepat untuk men-deploy aplikasi. Anda akan dipandu melalui proses penyiapan otomatis.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fais-sman11mks%2Fasisten-guru-ai-vercel&env=SCHOOL_NAME_FULL,SCHOOL_NAME_SHORT,APP_VERSION,APP_BASE_URL,GEMINI_API_KEYS,GOOGLE_SHEET_CSV_URLS,ADMIN_PASSWORD,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_WORKSPACE_DOMAIN&project-name=asisten-guru-ai&repository-name=asisten-guru-ai)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fais-sman11mks%2Fasisten-guru-ai-vercel&env=ORGANIZATION_NAME_FULL,ORGANIZATION_NAME_SHORT,APP_VERSION,APP_BASE_URL,GEMINI_API_KEYS,ORGANIZATION_DATA_SOURCES,SHEET_NAMES,ADMIN_PASSWORD,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_WORKSPACE_DOMAIN&project-name=asisten-guru-ai&repository-name=asisten-guru-ai)
 
 #### Langkah 1: Persiapan Wajib (Siapkan Ini Dulu!)
 
@@ -77,6 +77,9 @@ Sebelum menekan tombol, pastikan Anda sudah memiliki semua informasi berikut. In
 2.  **Login & Buat Proyek**: Anda akan diarahkan ke Vercel. Login dengan akun GitHub Anda. Vercel akan meminta Anda untuk membuat repositori Git baru (ini adalah salinan proyek untuk Anda). Beri nama dan klik **"Create"**.
 3.  **Isi Environment Variables**: Ini adalah bagian terpenting. Vercel akan menampilkan formulir untuk mengisi semua konfigurasi.
     *   Isi semua variabel sesuai data yang sudah Anda siapkan.
+    *   **UNTUK `ORGANIZATION_DATA_SOURCES` dan `SHEET_NAMES` (PENTING)**: Pastikan urutan URL di `ORGANIZATION_DATA_SOURCES` sama persis dengan urutan nama di `SHEET_NAMES`. Contoh:
+        - `ORGANIZATION_DATA_SOURCES`: `URL_UNTUK_SISWA,URL_UNTUK_GURU`
+        - `SHEET_NAMES`: `SISWA,GURU`
     *   **UNTUK `APP_BASE_URL`**: Karena Anda belum tahu URL finalnya, isi dengan placeholder sementara, contoh: `https://placeholder.com`. **Kita akan memperbaikinya di Langkah 4.**
     *   **UNTUK `JWT_SECRET`**: Buat string acak yang sangat panjang dan aman (64+ karakter). Anda bisa menggunakan generator online seperti [jwtsecrets.com](https://jwtsecrets.com/#generator) (pilih panjang 64+ karakter) untuk membuatnya.
     *   **VARIABEL GOOGLE (Opsional)**: Jika Anda tidak ingin menggunakan login Google, biarkan `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_WORKSPACE_DOMAIN` **kosong**. Aplikasi akan otomatis beralih ke mode "Hanya Admin".

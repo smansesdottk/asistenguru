@@ -42,6 +42,33 @@ function getSessionCookie(cookieHeader: string | undefined | null): string | und
 }
 // --- END: Self-contained Auth Logic ---
 
+// --- START: Data Source Parsing Logic ---
+/**
+ * Parses ORGANIZATION_DATA_SOURCES and SHEET_NAMES environment variables.
+ * It pairs the URLs from the first variable with names from the second variable
+ * based on their order.
+ * @returns An array of objects, each with a 'name' and 'url'.
+ */
+function getPairedDataSources(): { name: string; url: string }[] {
+    const urlsString = process.env.ORGANIZATION_DATA_SOURCES || '';
+    const namesString = process.env.SHEET_NAMES || '';
+
+    const urls = urlsString.split(',').map(url => url.trim()).filter(Boolean);
+    const names = namesString.split(',').map(name => name.trim().toUpperCase()).filter(Boolean);
+
+    if (urls.length === 0) {
+        return [];
+    }
+
+    return urls.map((url, index) => ({
+        // Use the name from SHEET_NAMES if available, otherwise generate a default name.
+        name: names[index] || `DATA_${index + 1}`,
+        url: url
+    }));
+}
+// --- END: Data Source Parsing Logic ---
+
+
 // Self-contained types to avoid path issues in deployment
 enum MessageRole {
   USER = 'user',
@@ -180,15 +207,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const now = Date.now();
     if (!schoolDataCache || (now - schoolDataCache.timestamp > CACHE_DURATION_MS)) {
       console.log("Cache is stale or empty. Fetching new school data...");
-      const sheetUrlsString = process.env.GOOGLE_SHEET_CSV_URLS || '';
-      const sheetUrls = sheetUrlsString.split(',').map(url => url.trim()).filter(Boolean);
-      if (sheetUrls.length === 0) {
-          throw new Error("GOOGLE_SHEET_CSV_URLS environment variable is not configured or empty on Vercel.");
+      const sources = getPairedDataSources();
+      
+      if (sources.length === 0) {
+          throw new Error("ORGANIZATION_DATA_SOURCES environment variable is not configured or empty on Vercel.");
       }
       
-      const sheetNames = ["SISWA", "GURU", "PEGAWAI", "PEMBELAJARAN", "ROMBEL", "PTK", "PELANGGARAN", "PRESENSI_SHALAT", "PROFIL_SEKOLAH"];
-      const promises = sheetUrls.map(url => fetch(url).then(res => {
-          if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.statusText}`);
+      const promises = sources.map(source => fetch(source.url).then(res => {
+          if (!res.ok) throw new Error(`Failed to fetch ${source.url}: ${res.statusText}`);
           return res.text();
       }));
       
@@ -196,8 +222,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       const fetchedSchoolData: Record<string, string> = {};
       csvDataArray.forEach((csv, index) => {
-          const name = sheetNames[index] || `DATA_${index + 1}`;
-          fetchedSchoolData[name] = csv;
+          const source = sources[index];
+          // Use the name from the parsed source object
+          fetchedSchoolData[source.name] = csv;
       });
 
       schoolDataCache = {
@@ -238,12 +265,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const intentResult = JSON.parse(intentResponse.text ?? '{}');
       const targetClassName = intentResult?.className;
       
-      if (targetClassName && schoolDataCache.data.SISWA) {
+      if (targetClassName && schoolDataCache.data['SISWA']) {
         const normalizedTargetClassName = normalizeClassName(targetClassName);
         console.log(`Class name detected: "${targetClassName}". Normalized to: "${normalizedTargetClassName}". Filtering data...`);
         
         // Step 2: Code-based Filtering based on the user's explicit schema
-        const studentsCsv = schoolDataCache.data.SISWA;
+        const studentsCsv = schoolDataCache.data['SISWA'];
         const students = Papa.parse(studentsCsv, { header: true, skipEmptyLines: true }).data as any[];
 
         // 1. Filter Students by "Rombel Saat Ini" using normalization
@@ -256,19 +283,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const studentNames = new Set(filteredStudents.map(s => s.Nama).filter(Boolean));
 
             const focusedData: Record<string, string> = {
-                SISWA: Papa.unparse(filteredStudents),
+                'SISWA': Papa.unparse(filteredStudents),
             };
 
             // 2. Filter PRESENSI_SHALAT by NISN
-            if (schoolDataCache.data.PRESENSI_SHALAT && studentNISNs.size > 0) {
-                const presensi = Papa.parse(schoolDataCache.data.PRESENSI_SHALAT, { header: true, skipEmptyLines: true }).data as any[];
+            if (schoolDataCache.data['PRESENSI SHALAT'] && studentNISNs.size > 0) {
+                const presensi = Papa.parse(schoolDataCache.data['PRESENSI SHALAT'], { header: true, skipEmptyLines: true }).data as any[];
                 const filteredPresensi = presensi.filter(p => studentNISNs.has(p.NISN));
-                if(filteredPresensi.length > 0) focusedData['PRESENSI_SHALAT'] = Papa.unparse(filteredPresensi);
+                if(filteredPresensi.length > 0) focusedData['PRESENSI SHALAT'] = Papa.unparse(filteredPresensi);
             }
 
             // 3. Filter PELANGGARAN by KELAS and NAMA
-            if (schoolDataCache.data.PELANGGARAN && studentNames.size > 0) {
-                 const pelanggaran = Papa.parse(schoolDataCache.data.PELANGGARAN, { header: true, skipEmptyLines: true }).data as any[];
+            if (schoolDataCache.data['PELANGGARAN'] && studentNames.size > 0) {
+                 const pelanggaran = Papa.parse(schoolDataCache.data['PELANGGARAN'], { header: true, skipEmptyLines: true }).data as any[];
                  const filteredPelanggaran = pelanggaran.filter(p => 
                     normalizeClassName(p.KELAS) === normalizedTargetClassName && studentNames.has(p.NAMA)
                  );
@@ -276,8 +303,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             // 4. Filter PEMBELAJARAN by "Nama Rombel"
-            if (schoolDataCache.data.PEMBELAJARAN) {
-                const pembelajaran = Papa.parse(schoolDataCache.data.PEMBELAJARAN, { header: true, skipEmptyLines: true }).data as any[];
+            if (schoolDataCache.data['PEMBELAJARAN']) {
+                const pembelajaran = Papa.parse(schoolDataCache.data['PEMBELAJARAN'], { header: true, skipEmptyLines: true }).data as any[];
                 const filteredPembelajaran = pembelajaran.filter(p => normalizeClassName(p['Nama Rombel']) === normalizedTargetClassName);
                 if(filteredPembelajaran.length > 0) focusedData['PEMBELAJARAN'] = Papa.unparse(filteredPembelajaran);
             }
@@ -299,9 +326,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log("Smart flow failed or was skipped. Using default method.", e instanceof Error ? e.message : "");
         // Default Fallback Logic
         finalSystemInstruction = `
-Anda adalah "Asisten Guru AI" untuk sekolah yang informasinya ada di environment variable.
-Tugas Anda adalah untuk membantu para guru dengan menjawab pertanyaan mereka terkait data sekolah.
-Gunakan HANYA data dalam format CSV yang disediakan di bawah ini untuk menjawab pertanyaan. Data ini diambil langsung dari beberapa Google Spreadsheet sekolah.
+Anda adalah "Asisten Guru AI" untuk institusi yang informasinya ada di environment variable.
+Tugas Anda adalah untuk membantu para guru dengan menjawab pertanyaan mereka terkait data institusi.
+Gunakan HANYA data dalam format CSV yang disediakan di bawah ini untuk menjawab pertanyaan. Data ini diambil langsung dari beberapa Google Spreadsheet.
 Setiap kunci dalam objek JSON berikut mewakili nama sheet (misalnya, "SISWA", "GURU") dan nilainya adalah konten sheet tersebut dalam format CSV.
 Jawablah dengan ramah, jelas, dan profesional dalam Bahasa Indonesia.
 Jika pertanyaan di luar konteks data yang diberikan, atau jika Anda tidak dapat menemukan jawabannya dalam data, katakan dengan sopan bahwa Anda tidak memiliki informasi tersebut.
