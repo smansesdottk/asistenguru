@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { ChatConversation } from '../types';
 import PlusIcon from './icons/PlusIcon';
 import DeleteIcon from './icons/DeleteIcon';
+import PrintIcon from './icons/PrintIcon';
 
 interface SidebarProps {
   conversations: ChatConversation[];
@@ -89,6 +90,17 @@ const Sidebar: React.FC<SidebarProps> = ({
             })}
           </ul>
         </nav>
+
+        <div className="p-2 border-t border-slate-200 dark:border-gray-700">
+            <button
+              onClick={() => window.print()}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 rounded-md hover:bg-slate-200 dark:hover:bg-gray-800 transition-colors"
+              title="Cetak atau simpan seluruh percakapan sebagai PDF"
+            >
+              <PrintIcon />
+              <span>Cetak/Simpan PDF</span>
+            </button>
+        </div>
       </aside>
     </>
   );

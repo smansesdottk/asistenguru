@@ -1,0 +1,68 @@
+/* print.css - Styles for printing and saving as PDF */
+@media print {
+  /* Hide non-essential UI elements */
+  header,
+  footer,
+  aside,
+  .group:hover .opacity-0 {
+    display: none !important;
+  }
+
+  /* Reset body and ensure full width for main content */
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure the chat container takes up the whole page */
+  #root {
+    display: block;
+    height: auto;
+  }
+  
+  .flex.h-screen {
+    display: block;
+    height: auto;
+  }
+
+  main {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 1in; /* Add some margins for printing */
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Improve message bubble styling for print */
+  .dark .dark\:bg-gray-700, .dark .dark\:bg-gray-900, .bg-slate-200 {
+    background-color: #f1f5f9 !important; /* light gray */
+  }
+
+  .dark .dark\:text-slate-200, .text-slate-800 {
+     color: #000000 !important;
+  }
+
+  .bg-blue-600 {
+    background-color: #dbeafe !important; /* light blue */
+    color: #000000 !important;
+  }
+  
+  /* Remove shadows */
+  [class*="shadow-"] {
+    box-shadow: none !important;
+  }
+
+  /* Ensure charts and tables print correctly */
+  .bg-white.dark\:bg-gray-800 {
+    background-color: #ffffff !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 2cm;
+  }
+}

@@ -1,7 +1,10 @@
 
 import React, { useMemo, useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import CsvIcon from './icons/CsvIcon';
 import CopyIcon from './icons/CopyIcon';
+import PdfIcon from './icons/PdfIcon';
 
 interface MarkdownTableProps {
   tableString: string;
@@ -50,6 +53,15 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({ tableString }) => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+  
+  const handleExportPdf = () => {
+    const doc = new jsPDF();
+    autoTable(doc, {
+      head: [headers],
+      body: rows,
+    });
+    doc.save('export_data.pdf');
+  };
 
   const handleCopy = () => {
     const tsvContent = [
@@ -78,6 +90,10 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({ tableString }) => {
         <button onClick={handleExportCsv} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded transition-colors" title="Ekspor ke CSV">
           <CsvIcon />
           <span>CSV</span>
+        </button>
+        <button onClick={handleExportPdf} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded transition-colors" title="Ekspor ke PDF">
+          <PdfIcon />
+          <span>PDF</span>
         </button>
       </div>
       <div className="overflow-x-auto border border-slate-300 dark:border-gray-600 rounded-lg shadow-sm">
