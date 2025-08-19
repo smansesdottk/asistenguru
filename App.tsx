@@ -9,6 +9,52 @@ const App: React.FC = () => {
   const [config, setConfig] = useState<PublicConfig | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // State untuk notifikasi pembaruan PWA
+  const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
+  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+
+  // Effect untuk pembaruan Service Worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          registration.onupdatefound = () => {
+            const installingWorker = registration.installing;
+            if (installingWorker) {
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed') {
+                  if (navigator.serviceWorker.controller) {
+                    console.log('Konten baru tersedia dan akan digunakan setelah semua tab ditutup. Menampilkan prompt pembaruan.');
+                    setWaitingWorker(registration.waiting);
+                    setIsUpdateAvailable(true);
+                  } else {
+                    console.log('Konten di-cache untuk penggunaan offline.');
+                  }
+                }
+              };
+            }
+          };
+        }).catch(error => {
+          console.error('Error saat registrasi service worker:', error);
+        });
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          window.location.reload();
+          refreshing = true;
+        }
+      });
+    }
+  }, []);
+  
+  const handleUpdate = () => {
+    if (waitingWorker) {
+      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+      setIsUpdateAvailable(false);
+    }
+  };
+
   const initializeApp = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -68,7 +114,13 @@ const App: React.FC = () => {
   }
 
   return user ? (
-    <ChatPage user={user} config={config} onLogout={handleLogout} />
+    <ChatPage 
+      user={user} 
+      config={config} 
+      onLogout={handleLogout} 
+      isUpdateAvailable={isUpdateAvailable}
+      onUpdate={handleUpdate}
+    />
   ) : (
     <LoginPage config={config} onLogin={handleLogin} />
   );

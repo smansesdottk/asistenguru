@@ -18,13 +18,15 @@ interface ChatPageProps {
   user: UserProfile;
   config: PublicConfig;
   onLogout: () => void;
+  isUpdateAvailable: boolean;
+  onUpdate: () => void;
 }
 
 const OLD_CHAT_HISTORY_KEY = 'chat_history_v1';
 const CHAT_HISTORY_KEY = 'chat_history_v2';
 
 
-const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
+const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAvailable, onUpdate }) => {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -354,6 +356,17 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout }) => {
         </main>
 
         <footer className="bg-white dark:bg-gray-900 p-4 border-t border-slate-200 dark:border-gray-700">
+          {isUpdateAvailable && (
+            <div className="bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 rounded-lg p-3 flex items-center justify-between gap-4 mb-4">
+              <p className="font-medium text-sm">Pembaruan aplikasi tersedia.</p>
+              <button 
+                  onClick={onUpdate}
+                  className="px-4 py-1.5 text-sm font-semibold bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex-shrink-0"
+              >
+                  Perbarui
+              </button>
+            </div>
+          )}
           <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
            <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-2">
             Asisten Guru AI | Versi {config.appVersion || 'N/A'} | Author : A. Indra Malik - sman11mks

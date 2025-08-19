@@ -1,5 +1,5 @@
 // Creator: A. Indra Malik - SMAN11MKS
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Papa from "papaparse";
 
@@ -138,7 +138,7 @@ ${dataContextString}
 KEMBALIKAN HANYA dalam format JSON dengan struktur: { "questions": ["pertanyaan 1", "pertanyaan 2", "pertanyaan 3", "pertanyaan 4"] }
 `;
 
-        const response = await performAiActionWithRetry(ai => 
+        const response = await performAiActionWithRetry<GenerateContentResponse>(ai => 
             ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: prompt,
