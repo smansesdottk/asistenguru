@@ -310,7 +310,16 @@ Jangan mengarang informasi.`;
     }
     // --- END: Smart Two-Step AI Flow ---
 
-    const finalPrompt = `${finalSystemInstruction}\n\nBerikut adalah data yang Anda miliki:\n${finalSchoolData}`;
+    const systemInstructionWithViz = `${finalSystemInstruction}
+PENTING: Jika pengguna meminta visualisasi data seperti perbandingan, rekapitulasi, atau distribusi (misalnya perbandingan gender, jumlah siswa per kelas, sebaran nilai), Anda HARUS menyertakan blok data grafik dalam format JSON di dalam respons teks Anda.
+Pilih tipe grafik 'pie' untuk proporsi (seperti gender) dan 'bar' untuk perbandingan antar kategori.
+Struktur JSON-nya adalah: \`{"type":"pie|bar","title":"Judul Grafik","data":{"labels":[...],"datasets":[{"label":"...","data":[...],"backgroundColor":["#hex",...]}]}}\`
+Blok JSON ini HARUS dibungkus dengan tag [CHART_DATA] dan [/CHART_DATA].
+Contoh respons: "Tentu, ini perbandingan siswa di kelas X 1: [CHART_DATA]{\\"type\\":\\"pie\\",\\"title\\":\\"Siswa X 1\\",\\"data\\":{\\"labels\\":[\\"Laki-laki\\",\\"Perempuan\\"],\\"datasets\\":[{\\"label\\":\\"Jumlah\\",\\"data\\":[15,17],\\"backgroundColor\\":[\\"#36A2EB\\",\\"#FF6384\\"]}]}}[/CHART_DATA] Silakan jika ada pertanyaan lain."
+Jika tidak ada permintaan visualisasi, jawablah seperti biasa tanpa tag atau JSON.`;
+
+    const finalPrompt = `${systemInstructionWithViz}\n\nBerikut adalah data yang Anda miliki:\n${finalSchoolData}`;
+
 
     const history = messages
       .slice(0, -1)

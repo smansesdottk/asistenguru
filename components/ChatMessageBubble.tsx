@@ -5,6 +5,7 @@ import { MessageRole } from '../types';
 import UserIcon from './icons/UserIcon';
 import BotIcon from './icons/BotIcon';
 import MarkdownTable from './MarkdownTable';
+import DataChart from './DataChart';
 import CopyIcon from './icons/CopyIcon';
 import ShareIcon from './icons/ShareIcon';
 import DeleteIcon from './icons/DeleteIcon';
@@ -39,30 +40,67 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
   const bubbleClasses = isUser ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-gray-700 dark:text-slate-200';
   const icon = isUser ? <UserIcon /> : <BotIcon />;
 
-  const tableRegex = /((?:\|\s*.*?\s*\|(?:\r?\n|\r|$))+)/g;
-
   const contentParts = useMemo(() => {
     if (isUser || !message.text) {
       return [{ type: 'text', content: message.text }];
     }
-    const parts = [];
+    
+    const chartRegex = /\[CHART_DATA\](.*?)\[\/CHART_DATA\]/s;
+    const tableRegex = /((?:\|\s*.*?\s*\|(?:\r?\n|\r|$))+)/g;
+    
+    let chartData = null;
+    let remainingText = message.text;
+
+    // 1. Ekstrak data grafik terlebih dahulu
+    const chartMatch = message.text.match(chartRegex);
+    if (chartMatch && chartMatch[1]) {
+      try {
+        // Coba parse JSON hanya jika tag penutup sudah ada
+        if (message.text.includes('[/CHART_DATA]')) {
+            chartData = JSON.parse(chartMatch[1]);
+            remainingText = message.text.replace(chartRegex, '');
+        }
+      } catch (e) {
+        console.error("Gagal mem-parsing JSON grafik:", e);
+        // Jika gagal, biarkan sebagai teks biasa
+      }
+    }
+    
+    // 2. Proses sisa teks untuk tabel
+    const textAndTableParts = [];
     let lastIndex = 0;
     let match;
-    while ((match = tableRegex.exec(message.text)) !== null) {
+    tableRegex.lastIndex = 0;
+
+    while ((match = tableRegex.exec(remainingText)) !== null) {
       if (match.index > lastIndex) {
-        parts.push({ type: 'text', content: message.text.substring(lastIndex, match.index) });
+        textAndTableParts.push({ type: 'text', content: remainingText.substring(lastIndex, match.index) });
       }
-      parts.push({ type: 'table', content: match[0] });
+      textAndTableParts.push({ type: 'table', content: match[0] });
       lastIndex = match.index + match[0].length;
     }
-    if (lastIndex < message.text.length) {
-      parts.push({ type: 'text', content: message.text.substring(lastIndex) });
+    if (lastIndex < remainingText.length) {
+      textAndTableParts.push({ type: 'text', content: remainingText.substring(lastIndex) });
     }
-    return parts.length > 0 ? parts : [{ type: 'text', content: message.text }];
+    
+    // 3. Gabungkan semua bagian
+    const combinedParts = [...textAndTableParts];
+    if (chartData) {
+      // Sisipkan grafik di akhir konten
+      combinedParts.push({ type: 'chart', content: chartData });
+    }
+
+    return combinedParts.length > 0 ? combinedParts : [{ type: 'text', content: message.text }];
   }, [message.text, isUser]);
   
   const handleCopy = () => {
-    navigator.clipboard.writeText(message.text).then(() => {
+    // Salin hanya teks, tanpa data grafik
+    const textToCopy = contentParts
+      .filter(p => p.type === 'text' || p.type === 'table')
+      .map(p => p.content)
+      .join('\n');
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
       setCopyStatus('copied');
       setTimeout(() => setCopyStatus('idle'), 2000);
     });
@@ -71,7 +109,11 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
   const handleShare = async () => {
     if (showShareButton) {
       try {
-        await navigator.share({ title: 'Pesan dari Asisten Guru AI', text: message.text });
+         const textToShare = contentParts
+          .filter(p => p.type === 'text' || p.type === 'table')
+          .map(p => p.content)
+          .join('\n');
+        await navigator.share({ title: 'Pesan dari Asisten Guru AI', text: textToShare });
       } catch (error) {
         console.error('Gagal membagikan:', error);
       }
@@ -88,6 +130,10 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
           {contentParts.map((part, index) => {
             if (part.type === 'table') {
               return <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-2 my-2"><MarkdownTable tableString={part.content} /></div>;
+            }
+            if (part.type === 'chart') {
+              const chart = part.content;
+              return <DataChart key={index} type={chart.type} title={chart.title} chartData={chart.data} />;
             }
             return part.content.trim() ? <p key={index} className="whitespace-pre-wrap"><SimpleMarkdownRenderer text={part.content} /></p> : null;
           })}
