@@ -53,79 +53,79 @@ Untuk mengganti logo, cukup ganti konten file `icon.svg` dan `favicon.svg` di **
 
 ## 🚀 Panduan Deployment
 
-### Metode 1: Tombol "Deploy to Vercel" (Sangat Direkomendasikan & Anti Gagal)
+### Metode 1: Deployment via GitHub (Sangat Direkomendasikan)
 
-Ini adalah cara termudah dan tercepat untuk men-deploy aplikasi. Anda akan dipandu melalui proses penyiapan otomatis.
+Ini adalah cara paling stabil dan direkomendasikan untuk men-deploy aplikasi. Anda akan membuat salinan proyek di akun GitHub Anda sendiri, lalu menghubungkannya ke Vercel.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fais-sman11mks%2Fasisten-guru-ai-vercel&env=ORGANIZATION_NAME_FULL,ORGANIZATION_NAME_SHORT,APP_VERSION,APP_BASE_URL,GEMINI_API_KEYS,ORGANIZATION_DATA_SOURCES,SHEET_NAMES,ADMIN_PASSWORD,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_WORKSPACE_DOMAIN&project-name=asisten-guru-ai&repository-name=asisten-guru-ai)
+#### Langkah 1: Persiapan (Wajib Disiapkan Terlebih Dahulu)
 
-#### Langkah 1: Persiapan Wajib (Siapkan Ini Dulu!)
+Sebelum memulai, pastikan Anda sudah memiliki semua informasi berikut. Ini akan membuat prosesnya lancar dan cepat.
 
-Sebelum menekan tombol, pastikan Anda sudah memiliki semua informasi berikut. Ini akan membuat prosesnya lancar.
+-   **Akun GitHub**: Anda memerlukannya untuk membuat salinan proyek dan login ke Vercel. Jika belum punya, daftar [di sini](https://github.com).
+-   **Kunci API Gemini**: Dapatkan dari [Google AI Studio](https://aistudio.google.com/app/apikey). Anda bisa membuat beberapa kunci dan memisahkannya dengan koma.
+-   **URL Google Sheet**: Buka Google Sheet Anda, lalu pilih `File > Bagikan > Publikasikan di web`. Pilih `Seluruh Dokumen` dan format `Comma-separated values (.csv)`. Salin URL yang dihasilkan. Ulangi untuk semua sheet yang diperlukan.
+-   **Kredensial Google OAuth (Opsional)**: Jika ingin menggunakan login Google, siapkan dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+    *   Google Client ID
+    *   Google Client Secret
+    *   Domain Google Workspace Anda (contoh: `sekolahanda.sch.id`)
 
-1.  **Akun GitHub**: Anda memerlukannya untuk login ke Vercel dan membuat salinan (fork) proyek.
-2.  **Kunci API Gemini**: Dapatkan dari [Google AI Studio](https://aistudio.google.com/app/apikey). Anda bisa membuat beberapa kunci dan memisahkannya dengan koma.
-3.  **URL Google Sheet**: Buka Google Sheet Anda, lalu pilih `File > Bagikan > Publikasikan di web`. Pilih `Seluruh Dokumen` dan format `Comma-separated values (.csv)`. Salin URL yang dihasilkan. Ulangi untuk semua sheet yang diperlukan.
-4.  **Kredensial Google OAuth (Opsional)**: Jika ingin menggunakan login Google, siapkan dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
-    *   **Google Client ID**
-    *   **Google Client Secret**
-    *   **Google Workspace Domain** (contoh: `sekolahanda.sch.id`)
+#### Langkah 2: Buat Salinan Proyek (Fork) ke Akun GitHub Anda
 
-#### Langkah 2: Proses Deployment di Vercel
+"Fork" adalah proses membuat salinan pribadi dari sebuah repositori. Ini memungkinkan Anda untuk memiliki versi proyek sendiri.
 
-1.  **Klik Tombol "Deploy"** di atas.
-2.  **Login & Buat Proyek**: Anda akan diarahkan ke Vercel. Login dengan akun GitHub Anda. Vercel akan meminta Anda untuk membuat repositori Git baru (ini adalah salinan proyek untuk Anda). Beri nama dan klik **"Create"**.
-3.  **Isi Environment Variables**: Ini adalah bagian terpenting. Vercel akan menampilkan formulir untuk mengisi semua konfigurasi.
-    *   Isi semua variabel sesuai data yang sudah Anda siapkan.
-    *   **UNTUK `ORGANIZATION_DATA_SOURCES` dan `SHEET_NAMES` (PENTING)**: Pastikan urutan URL di `ORGANIZATION_DATA_SOURCES` sama persis dengan urutan nama di `SHEET_NAMES`. Contoh:
-        - `ORGANIZATION_DATA_SOURCES`: `URL_UNTUK_SISWA,URL_UNTUK_GURU`
-        - `SHEET_NAMES`: `SISWA,GURU`
-    *   **UNTUK `APP_BASE_URL`**: Karena Anda belum tahu URL finalnya, isi dengan placeholder sementara, contoh: `https://placeholder.com`. **Kita akan memperbaikinya di Langkah 4.**
-    *   **UNTUK `JWT_SECRET`**: Buat string acak yang sangat panjang dan aman (64+ karakter). Anda bisa menggunakan generator online seperti [jwtsecrets.com](https://jwtsecrets.com/#generator) (pilih panjang 64+ karakter) untuk membuatnya.
-    *   **VARIABEL GOOGLE (Opsional)**: Jika Anda tidak ingin menggunakan login Google, biarkan `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_WORKSPACE_DOMAIN` **kosong**. Aplikasi akan otomatis beralih ke mode "Hanya Admin".
-4.  **Klik "Deploy"**: Setelah semua terisi, klik "Deploy". Vercel akan memulai proses build. Tunggu beberapa menit hingga selesai.
+1.  Buka halaman repositori proyek ini di GitHub: [https://github.com/ais-sman11mks/asisten-guru-ai-vercel](https://github.com/ais-sman11mks/asisten-guru-ai-vercel).
+2.  Di pojok kanan atas halaman, klik tombol **"Fork"**.
+3.  GitHub akan meminta Anda untuk mengonfirmasi. Anda bisa biarkan nama repositori tetap sama. Klik **"Create fork"**.
+4.  Sekarang Anda memiliki salinan repositori ini di bawah akun GitHub Anda.
 
-#### Langkah 3: Dapatkan URL Produksi Anda
+#### Langkah 3: Hubungkan dan Deploy Proyek di Vercel
 
-Setelah deployment selesai, Vercel akan memberikan Anda URL produksi (contoh: `https://nama-proyek-anda.vercel.app`). **Selamat! Aplikasi Anda sudah online.**
+1.  Buka [Vercel](https://vercel.com) dan login menggunakan akun GitHub Anda.
+2.  Di dasbor Vercel, klik **"Add New..." -> "Project"**.
+3.  Di halaman "Import Git Repository", Vercel akan menampilkan daftar repositori dari akun GitHub Anda. Pilih repositori `asisten-guru-ai` yang baru saja Anda fork, lalu klik **"Import"**.
+4.  Vercel akan secara otomatis mendeteksi bahwa ini adalah proyek React/Vercel Functions dan akan menampilkan halaman **"Configure Project"**.
 
-#### Langkah 4: Konfigurasi Final (Wajib Agar Login Berfungsi!)
+#### Langkah 4: Konfigurasi Environment Variables di Vercel
 
-Sekarang kita perbaiki placeholder yang tadi.
+Ini adalah bagian terpenting. Di halaman "Configure Project", buka bagian **"Environment Variables"**. Anda perlu menambahkan semua konfigurasi dari file `env.txt`.
+
+1.  Salin nama setiap variabel dari `env.txt` (misalnya, `ORGANIZATION_NAME_FULL`) ke kolom "Name" di Vercel.
+2.  Isi nilainya di kolom "Value" sesuai data yang sudah Anda siapkan di Langkah 1.
+3.  **PENTING**:
+    *   **`APP_BASE_URL`**: Karena Anda belum tahu URL finalnya, isi dengan placeholder sementara, contoh: `https://placeholder.com`. **Kita akan perbaiki ini nanti.**
+    *   **`JWT_SECRET`**: Buat string acak yang sangat panjang dan aman (64+ karakter). Gunakan generator online seperti [jwtsecrets.com](https://jwtsecrets.com/#generator).
+    *   **`ORGANIZATION_DATA_SOURCES` & `SHEET_NAMES`**: Pastikan urutan URL dan Nama sama persis.
+    *   **Login Google (Opsional)**: Jika tidak ingin pakai login Google, biarkan `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_WORKSPACE_DOMAIN` **kosong**. Aplikasi akan otomatis beralih ke mode "Hanya Admin".
+
+#### Langkah 5: Mulai Deployment
+
+Setelah semua variabel terisi, klik tombol **"Deploy"**. Vercel akan mulai membangun dan men-deploy aplikasi Anda. Proses ini mungkin memakan waktu beberapa menit.
+
+Setelah selesai, Vercel akan memberikan Anda URL produksi (contoh: `https://asisten-guru-ai-xxxx.vercel.app`). **Selamat, aplikasi Anda sudah online!** Namun, masih ada satu langkah terakhir yang krusial.
+
+#### Langkah 6: Konfigurasi Final (Wajib Agar Login Berfungsi!)
+
+Sekarang kita perbaiki placeholder `APP_BASE_URL` dan mengonfigurasi Google.
 
 1.  **Perbarui `APP_BASE_URL` di Vercel**:
-    *   Di dasbor proyek Vercel Anda, buka tab **"Settings" > "Environment Variables"**.
+    *   Di dasbor proyek Vercel Anda, buka tab **"Settings" -> "Environment Variables"**.
     *   Cari variabel `APP_BASE_URL`, klik menu tiga titik, lalu pilih **"Edit"**.
     *   Ganti nilai placeholder (`https://placeholder.com`) dengan **URL produksi asli** yang baru saja Anda dapatkan dari Vercel. **PENTING: Jangan sertakan garis miring (`/`) di akhir URL.**
     *   Klik **"Save"**.
-    *   Vercel akan meminta Anda untuk men-deploy ulang agar perubahan berlaku. Buka tab **"Deployments"**, cari deployment terbaru, klik menu tiga titik, dan pilih **"Redeploy"**.
+    *   Perubahan ini memerlukan deployment ulang. Buka tab **"Deployments"**, cari deployment teratas (yang terbaru), klik menu tiga titik di sebelah kanan, dan pilih **"Redeploy"**. Klik "Redeploy" lagi untuk konfirmasi.
 
 2.  **Perbarui URI Pengalihan Google (Jika Menggunakan Login Google)**:
     *   Kembali ke [Google Cloud Console](https://console.cloud.google.com/apis/credentials) Anda.
     *   Buka kredensial OAuth 2.0 Anda.
-    *   Di bagian **"Authorized redirect URIs"**, tambahkan URL callback produksi Anda: `https://NAMA-PROYEK-ANDA.vercel.app/api/auth-callback`. Ganti `NAMA-PROYEK-ANDA.vercel.app` dengan URL Anda.
+    *   Di bagian **"Authorized redirect URIs"**, tambahkan URL callback produksi Anda: `https://URL-PRODUKSI-ANDA/api/auth-callback`. Ganti `URL-PRODUKSI-ANDA` dengan URL Vercel Anda.
 
 Selesai! Aplikasi Anda sekarang sepenuhnya terkonfigurasi dan siap digunakan.
 
 ---
 
-### Metode 2: Deployment Manual (Alternatif)
+### Metode 2: Deployment Manual via Vercel CLI (Alternatif)
 
-Gunakan metode ini jika Anda lebih suka melakukan setup langkah demi langkah secara manual. Pilih salah satu dari dua opsi di bawah ini.
-
-#### Opsi A: Menggunakan Integrasi Git
-
-Metode ini menghubungkan repositori GitHub Anda langsung ke Vercel. Setiap kali Anda melakukan `push`, Vercel akan otomatis men-deploy versi terbaru.
-
-1.  **Fork & Klon**: Buat *fork* dari repositori ini ke akun GitHub Anda, lalu klon ke komputer lokal.
-2.  **Deploy ke Vercel**: Login ke Vercel, pilih **"Add New... -> Project"**, dan impor repositori yang sudah Anda *fork*.
-3.  **Konfigurasi Environment Variables**: Vercel akan meminta Anda untuk menambahkan variabel lingkungan. Salin semua isi dari file `env.txt`, dan isi nilainya satu per satu di dasbor Vercel.
-4.  **Deploy**: Klik "Deploy". Setelah selesai, Vercel akan memberikan URL produksi.
-5.  **Konfigurasi Final**: Ikuti **Langkah 4** dari "Metode 1" di atas untuk memperbarui `APP_BASE_URL` dan URI pengalihan Google.
-
-#### Opsi B: Menggunakan Vercel CLI
-
-Metode ini untuk men-deploy langsung dari terminal tanpa menghubungkan repositori Git.
+Gunakan metode ini untuk men-deploy langsung dari terminal tanpa menghubungkan repositori Git secara formal ke Vercel.
 
 1.  **Instalasi**: Unduh kode proyek, lalu instal Vercel CLI (`npm install -g vercel`) dan dependensi proyek (`npm install`).
 2.  **Login**: Jalankan `vercel login` di terminal.
@@ -137,7 +137,7 @@ Metode ini untuk men-deploy langsung dari terminal tanpa menghubungkan repositor
     vercel build --prod
     vercel deploy --prebuilt --prod
     ```
-7.  **Konfigurasi Final**: Ikuti **Langkah 4** dari "Metode 1" di atas.
+7.  **Konfigurasi Final**: Ikuti **Langkah 6** dari "Metode 1" di atas untuk memperbarui `APP_BASE_URL` dan URI pengalihan Google.
 
 ---
 

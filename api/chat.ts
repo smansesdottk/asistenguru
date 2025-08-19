@@ -1,3 +1,4 @@
+
 // Creator: A. Indra Malik - SMAN11MKS
 import { GoogleGenAI, Type } from "@google/genai";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -338,11 +339,13 @@ Jangan mengarang informasi.`;
     // --- END: Smart Two-Step AI Flow ---
 
     const systemInstructionWithViz = `${finalSystemInstruction}
-PENTING: Jika pengguna meminta visualisasi data seperti perbandingan, rekapitulasi, atau distribusi (misalnya perbandingan gender, jumlah siswa per kelas, sebaran nilai), Anda HARUS menyertakan blok data grafik dalam format JSON di dalam respons teks Anda.
-Pilih tipe grafik 'pie' untuk proporsi (seperti gender) dan 'bar' untuk perbandingan antar kategori.
-Struktur JSON-nya adalah: \`{"type":"pie|bar","title":"Judul Grafik","data":{"labels":[...],"datasets":[{"label":"...","data":[...],"backgroundColor":["#hex",...]}]}}\`
-Blok JSON ini HARUS dibungkus dengan tag [CHART_DATA] dan [/CHART_DATA].
-Contoh respons: "Tentu, ini perbandingan siswa di kelas X 1: [CHART_DATA]{\\"type\\":\\"pie\\",\\"title\\":\\"Siswa X 1\\",\\"data\\":{\\"labels\\":[\\"Laki-laki\\",\\"Perempuan\\"],\\"datasets\\":[{\\"label\\":\\"Jumlah\\",\\"data\\":[15,17],\\"backgroundColor\\":[\\"#36A2EB\\",\\"#FF6384\\"]}]}}[/CHART_DATA] Silakan jika ada pertanyaan lain."
+PENTING: Jika pengguna meminta visualisasi data (seperti grafik, diagram, perbandingan, rekapitulasi, atau distribusi), Anda HARUS menyertakan **satu atau lebih blok data grafik** dalam format JSON di dalam respons teks Anda.
+Misalnya, jika diminta "grafik batang dan lingkaran", Anda harus membuat KEDUA-DUANYA.
+- Gunakan tipe grafik 'pie' untuk proporsi (seperti persentase gender).
+- Gunakan tipe grafik 'bar' untuk perbandingan antar kategori (seperti jumlah siswa per kelas).
+Struktur JSON untuk setiap grafik adalah: \`{"type":"pie|bar","title":"Judul Grafik","data":{"labels":[...],"datasets":[{"label":"...","data":[...],"backgroundColor":["#hex",...]}]}}\`
+Setiap blok JSON HARUS dibungkus dengan tag [CHART_DATA] dan [/CHART_DATA].
+Contoh respons untuk dua grafik: "Tentu, ini grafiknya: [CHART_DATA]{...pie chart JSON...}[/CHART_DATA] dan ini grafik lainnya [CHART_DATA]{...bar chart JSON...}[/CHART_DATA] Teks penjelasan tambahan."
 Jika tidak ada permintaan visualisasi, jawablah seperti biasa tanpa tag atau JSON.`;
 
     const finalPrompt = `${systemInstructionWithViz}\n\nBerikut adalah data yang Anda miliki:\n${finalSchoolData}`;

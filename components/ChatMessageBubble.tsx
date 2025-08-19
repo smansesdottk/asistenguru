@@ -44,53 +44,52 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
     if (isUser || !message.text) {
       return [{ type: 'text', content: message.text }];
     }
-    
-    const chartRegex = /\[CHART_DATA\](.*?)\[\/CHART_DATA\]/s;
-    const tableRegex = /((?:\|\s*.*?\s*\|(?:\r?\n|\r|$))+)/g;
-    
-    let chartData = null;
-    let remainingText = message.text;
 
-    // 1. Ekstrak data grafik terlebih dahulu
-    const chartMatch = message.text.match(chartRegex);
-    if (chartMatch && chartMatch[1]) {
-      try {
-        // Coba parse JSON hanya jika tag penutup sudah ada
-        if (message.text.includes('[/CHART_DATA]')) {
-            chartData = JSON.parse(chartMatch[1]);
-            remainingText = message.text.replace(chartRegex, '');
-        }
-      } catch (e) {
-        console.error("Gagal mem-parsing JSON grafik:", e);
-        // Jika gagal, biarkan sebagai teks biasa
-      }
-    }
-    
-    // 2. Proses sisa teks untuk tabel
-    const textAndTableParts = [];
+    // Regex to find either a chart block or a markdown table block, globally.
+    // Group 1: Chart JSON content
+    // Group 2: Table string content
+    const combinedRegex = /\[CHART_DATA\](.*?)\[\/CHART_DATA\]|((?:\|\s*.*?\s*\|(?:\r?\n|\r|$))+)/gs;
+
+    const parts = [];
     let lastIndex = 0;
     let match;
-    tableRegex.lastIndex = 0;
 
-    while ((match = tableRegex.exec(remainingText)) !== null) {
+    // Reset regex state for exec
+    combinedRegex.lastIndex = 0;
+
+    while ((match = combinedRegex.exec(message.text)) !== null) {
+      // 1. Add any text that came before this match
       if (match.index > lastIndex) {
-        textAndTableParts.push({ type: 'text', content: remainingText.substring(lastIndex, match.index) });
+        parts.push({ type: 'text', content: message.text.substring(lastIndex, match.index) });
       }
-      textAndTableParts.push({ type: 'table', content: match[0] });
-      lastIndex = match.index + match[0].length;
-    }
-    if (lastIndex < remainingText.length) {
-      textAndTableParts.push({ type: 'text', content: remainingText.substring(lastIndex) });
-    }
-    
-    // 3. Gabungkan semua bagian
-    const combinedParts = [...textAndTableParts];
-    if (chartData) {
-      // Sisipkan grafik di akhir konten
-      combinedParts.push({ type: 'chart', content: chartData });
+
+      const chartJson = match[1];
+      const tableString = match[2];
+
+      // 2. Add the matched part (chart or table)
+      if (chartJson) {
+        try {
+          const chartData = JSON.parse(chartJson.trim());
+          parts.push({ type: 'chart', content: chartData });
+        } catch (e) {
+          console.error("Gagal mem-parsing JSON grafik:", e, "JSON string mentah:", chartJson);
+          // If parsing fails, render the original block as text to show what went wrong.
+          parts.push({ type: 'text', content: match[0] });
+        }
+      } else if (tableString) {
+        parts.push({ type: 'table', content: tableString });
+      }
+
+      // 3. Update the last index to the end of the current match
+      lastIndex = combinedRegex.lastIndex;
     }
 
-    return combinedParts.length > 0 ? combinedParts : [{ type: 'text', content: message.text }];
+    // 4. Add any remaining text after the last match
+    if (lastIndex < message.text.length) {
+      parts.push({ type: 'text', content: message.text.substring(lastIndex) });
+    }
+
+    return parts.length > 0 ? parts : [{ type: 'text', content: message.text }];
   }, [message.text, isUser]);
   
   const handleCopy = () => {
