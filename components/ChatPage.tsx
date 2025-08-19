@@ -33,6 +33,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [promptStarters, setPromptStarters] = useState<string[]>([]);
   const [isLoadingStarters, setIsLoadingStarters] = useState(true);
+  const [isHistoryLoaded, setIsHistoryLoaded] = useState(false); // State untuk mencegah race condition
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
@@ -63,8 +64,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
             if (Array.isArray(savedConversations) && savedConversations.length > 0) {
                 setConversations(savedConversations);
                 setActiveConversationId(savedConversations[0].id); // Activate the most recent one
-                // Check status silently in the background
                 fetch('/api/status').then(res => res.json()).then(setSystemStatus);
+                setIsHistoryLoaded(true); // Tandai history sudah dimuat
                 return;
             }
         } catch (e) {
@@ -91,6 +92,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
           localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify([newConversation]));
           localStorage.removeItem(OLD_CHAT_HISTORY_KEY);
           fetch('/api/status').then(res => res.json()).then(setSystemStatus);
+          setIsHistoryLoaded(true); // Tandai history sudah dimuat
           return;
         }
       } catch (e) {
@@ -99,20 +101,24 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
       }
     }
     
-    // If no history at all, initialize status check for the first message
+    // If no history at all, initialize status check and mark loading as complete
     fetch('/api/status').then(res => res.json()).then(setSystemStatus);
+    setIsHistoryLoaded(true); // Tetap tandai selesai walau tidak ada history
 
   }, []);
 
   // Save conversations to localStorage whenever they change
   useEffect(() => {
+    // Hanya simpan jika history sudah selesai dimuat untuk mencegah race condition
+    if (!isHistoryLoaded) return;
+
     if (conversations.length > 0) {
       localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(conversations));
     } else {
       // If all conversations are deleted, clear storage
       localStorage.removeItem(CHAT_HISTORY_KEY);
     }
-  }, [conversations]);
+  }, [conversations, isHistoryLoaded]);
   
   const activeConversation = conversations.find(c => c.id === activeConversationId);
   const activeMessages = activeConversation?.messages ?? [];
