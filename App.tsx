@@ -17,20 +17,33 @@ const App: React.FC = () => {
   // Effect to handle theme changes
   useEffect(() => {
     const root = window.document.documentElement;
-    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    
-    root.classList.toggle('dark', isDark);
-    localStorage.setItem('theme', theme);
-    
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      if (theme === 'system') {
-        root.classList.toggle('dark', mediaQuery.matches);
+
+    // Fungsi untuk menerapkan tema berdasarkan state
+    const applyTheme = () => {
+      const isSystemDark = mediaQuery.matches;
+
+      if (theme === 'dark' || (theme === 'system' && isSystemDark)) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
       }
     };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+
+    // Terapkan tema saat komponen dimuat atau saat 'theme' berubah
+    applyTheme();
+    localStorage.setItem('theme', theme);
+
+    // Listener untuk perubahan tema sistem
+    const handleSystemChange = () => {
+      // Hanya terapkan perubahan jika tema saat ini adalah 'sistem'
+      if (theme === 'system') {
+        applyTheme();
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleSystemChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemChange);
 
   }, [theme]);
 
