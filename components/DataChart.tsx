@@ -11,6 +11,7 @@ import {
   BarElement,
   Title,
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(
   ArcElement,
@@ -19,7 +20,8 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  Title
+  Title,
+  ChartDataLabels
 );
 
 // Atur warna default untuk teks Chart.js (untuk dukungan mode gelap)
@@ -66,7 +68,21 @@ const DataChart = forwardRef<ChartJS, ChartProps>(({ type, chartData, title }, r
         backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
         titleColor: isDarkMode ? '#f1f5f9' : '#1e293b',
         bodyColor: isDarkMode ? '#f1f5f9' : '#1e293b',
-      }
+      },
+      datalabels: {
+        display: true,
+        color: 'white',
+        font: {
+          weight: 'bold' as const,
+        },
+        // Menambahkan garis luar tipis pada teks untuk kontras yang lebih baik
+        textStrokeColor: '#000000',
+        textStrokeWidth: 1,
+        formatter: (value: number) => {
+          // Anda dapat memformat angka di sini jika perlu, mis., menambahkan koma
+          return value;
+        },
+      },
     },
     scales: type === 'bar' ? {
         x: {

@@ -148,11 +148,31 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
     let chartCounter = 0;
     for (const part of contentParts) {
       if (part.type === 'text' && part.content.trim()) {
-        const splitText = doc.splitTextToSize(part.content, usableWidth);
-        const textHeight = splitText.length * 5; // Approximate height
-        checkAndAddPage(textHeight);
-        doc.text(splitText, margin, yPos);
-        yPos += textHeight + 5;
+        const lineHeight = doc.getLineHeight() / doc.internal.scaleFactor;
+        const spaceAfterBlock = 5;
+
+        // Use jsPDF to handle line wrapping for the whole text block first.
+        const lines = doc.splitTextToSize(part.content, usableWidth);
+        
+        // Process each pre-wrapped line to apply styles.
+        for (const line of lines) {
+          checkAndAddPage(lineHeight); // Check if the next line fits before drawing
+          const segments = line.split(/(\*\*.*?\*\*)/g).filter(p => p); // Split into bold/normal parts
+          let currentX = margin;
+
+          for (const segment of segments) {
+            const isBold = segment.startsWith('**') && segment.endsWith('**');
+            const text = isBold ? segment.slice(2, -2) : segment;
+            
+            doc.setFont(undefined, isBold ? 'bold' : 'normal');
+            doc.text(text, currentX, yPos);
+            currentX += doc.getTextWidth(text);
+          }
+          yPos += lineHeight; // Move to the next line
+        }
+        
+        doc.setFont(undefined, 'normal'); // Reset font style
+        yPos += spaceAfterBlock; // Add margin after the text block
       } else if (part.type === 'table') {
         const lines = part.content.trim().split('\n').filter((line: string) => line.includes('|'));
         if (lines.length >= 2) {
@@ -175,7 +195,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
           const imgData = chartRef.toBase64Image();
           const imgProps = doc.getImageProperties(imgData);
           const pdfHeight = (imgProps.height * usableWidth) / imgProps.width;
-          checkAndAddPage(pdfHeight);
+          checkAndAddPage(pdfHeight + 10); // Check page break before adding image
           doc.addImage(imgData, 'PNG', margin, yPos, usableWidth, pdfHeight);
           yPos += pdfHeight + 10;
         }
