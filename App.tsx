@@ -25,51 +25,53 @@ const App: React.FC = () => {
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
 
-  // Effect to apply theme based on user's choice ('theme' state)
+  // Consolidated theme management effect
   useEffect(() => {
+    // 1. Define the media query and root element
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const root = window.document.documentElement;
-    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    // Apply the correct class based on the current theme state
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else if (theme === 'light') {
-      root.classList.remove('dark');
-    } else { // theme is 'system'
-      if (isSystemDark) {
-        root.classList.add('dark');
-      } else {
+    // 2. Define a handler for OS theme changes
+    const handleSystemThemeChange = (event: MediaQueryListEvent) => {
+        // This handler only runs when the OS theme *actually changes*.
+        // We only care about this if the user's setting is 'system'.
+        // We read from localStorage to get the user's most recent choice,
+        // avoiding stale closures on the 'theme' state variable.
+        if (localStorage.getItem('theme') === 'system') {
+            if (event.matches) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+        }
+    };
+
+    // 3. Add the event listener for OS changes
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+
+    // 4. Apply the theme based on the current 'theme' state from React.
+    // This part runs every time the user clicks a button, changing the state.
+    if (theme === 'light') {
         root.classList.remove('dark');
-      }
+        localStorage.setItem('theme', 'light');
+    } else if (theme === 'dark') {
+        root.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    } else { // theme === 'system'
+        localStorage.setItem('theme', 'system');
+        // When switching TO system, immediately apply the current OS theme
+        if (mediaQuery.matches) {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
     }
 
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  // Separate effect to listen for OS-level theme changes. This runs only once.
-  useEffect(() => {
-    const root = window.document.documentElement;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const handleSystemChange = (e: MediaQueryListEvent) => {
-      // Check localStorage directly to get the user's *current* preference.
-      // We don't use the 'theme' state here to avoid stale closures.
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'system' || !savedTheme) {
-        if (e.matches) {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleSystemChange);
-
+    // 5. Cleanup function to remove the listener when the component unmounts.
     return () => {
-      mediaQuery.removeEventListener('change', handleSystemChange);
+        mediaQuery.removeEventListener('change', handleSystemThemeChange);
     };
-  }, []); // Empty array means this effect runs only once on mount.
+}, [theme]); // This effect re-runs ONLY when the user's choice (the 'theme' state) changes.
 
 
   // Effect untuk pembaruan Service Worker
