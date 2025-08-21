@@ -192,29 +192,42 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
         const chartRef = chartRefs.current[chartCounter];
         chartCounter++;
         if (chartRef) {
+          const isDarkMode = document.documentElement.classList.contains('dark');
+
+          // If in dark mode, temporarily switch chart text colors to light mode for PDF export
+          if (isDarkMode) {
+            if (chartRef.options.plugins?.title) chartRef.options.plugins.title.color = '#1e293b'; // dark text
+            if (chartRef.options.plugins?.legend?.labels) chartRef.options.plugins.legend.labels.color = '#475569'; // dark text
+            if (chartRef.options.scales?.x?.ticks) chartRef.options.scales.x.ticks.color = '#475569';
+            if (chartRef.options.scales?.y?.ticks) chartRef.options.scales.y.ticks.color = '#475569';
+            chartRef.update('none');
+          }
+          
           const canvas = chartRef.canvas;
           const ctx = canvas.getContext('2d');
-
+          
+          // Always draw a white background for the exported image. This is ink-safe for printing.
           if (ctx) {
-            // Save the current state to avoid side-effects
             ctx.save();
-            // This composite operation draws the new shape BEHIND existing content
             ctx.globalCompositeOperation = 'destination-over';
-            
-            // Set fill style based on current theme to match chart's container
-            const isDarkMode = document.documentElement.classList.contains('dark');
-            ctx.fillStyle = isDarkMode ? '#1f2937' : '#ffffff'; // Corresponds to Tailwind's dark:bg-gray-800 and bg-white
-            
-            // Draw the background rectangle
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
           }
           
-          // Now, generate the image which will include our new background
           const imgData = chartRef.toBase64Image();
-
-          // Restore the canvas context to its original state, removing our changes
+          
+          // Restore canvas to its original state (removes the white background from the on-screen chart)
           if (ctx) {
             ctx.restore();
+          }
+
+          // Revert chart text colors back to dark mode if they were changed
+          if (isDarkMode) {
+            if (chartRef.options.plugins?.title) chartRef.options.plugins.title.color = '#f1f5f9'; // white text
+            if (chartRef.options.plugins?.legend?.labels) chartRef.options.plugins.legend.labels.color = '#cbd5e1'; // white text
+            if (chartRef.options.scales?.x?.ticks) chartRef.options.scales.x.ticks.color = '#cbd5e1';
+            if (chartRef.options.scales?.y?.ticks) chartRef.options.scales.y.ticks.color = '#cbd5e1';
+            chartRef.update('none');
           }
 
           const imgProps = doc.getImageProperties(imgData);
