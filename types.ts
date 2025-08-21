@@ -4,6 +4,8 @@ export enum MessageRole {
   SYSTEM = 'system',
 }
 
+export type Theme = 'light' | 'dark' | 'system';
+
 export interface ChatMessage {
   role: MessageRole;
   text: string;
@@ -52,5 +54,3 @@ export interface PublicConfig {
   appBaseUrl?: string;
   googleWorkspaceDomain?: string;
 }
-
-export type Theme = 'system' | 'light' | 'dark';

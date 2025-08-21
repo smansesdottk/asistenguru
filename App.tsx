@@ -4,74 +4,40 @@ import type { UserProfile, PublicConfig, Theme } from './types';
 import LoginPage from './components/LoginPage';
 import ChatPage from './components/ChatPage';
 
-// Helper function to safely get the initial theme from localStorage
-function getInitialTheme(): Theme {
-  if (typeof window !== 'undefined' && window.localStorage) {
-    const savedTheme = window.localStorage.getItem('theme');
-    if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') {
-      return savedTheme;
-    }
-  }
-  return 'system';
-}
-
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [config, setConfig] = useState<PublicConfig | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'system');
+
 
   // State untuk notifikasi pembaruan PWA
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
 
-  // Consolidated theme management effect
+  // Effect to apply selected theme (light/dark/system)
   useEffect(() => {
-    // 1. Define the media query and root element
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const root = window.document.documentElement;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    // 2. Define a handler for OS theme changes
-    const handleSystemThemeChange = (event: MediaQueryListEvent) => {
-        // This handler only runs when the OS theme *actually changes*.
-        // We only care about this if the user's setting is 'system'.
-        // We read from localStorage to get the user's most recent choice,
-        // avoiding stale closures on the 'theme' state variable.
-        if (localStorage.getItem('theme') === 'system') {
-            if (event.matches) {
-                root.classList.add('dark');
-            } else {
-                root.classList.remove('dark');
-            }
-        }
-    };
+    const applyTheme = () => {
+      // Always clean up first
+      root.classList.remove('dark');
 
-    // 3. Add the event listener for OS changes
-    mediaQuery.addEventListener('change', handleSystemThemeChange);
-
-    // 4. Apply the theme based on the current 'theme' state from React.
-    // This part runs every time the user clicks a button, changing the state.
-    if (theme === 'light') {
-        root.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-    } else if (theme === 'dark') {
+      if (theme === 'dark' || (theme === 'system' && mediaQuery.matches)) {
         root.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-    } else { // theme === 'system'
-        localStorage.setItem('theme', 'system');
-        // When switching TO system, immediately apply the current OS theme
-        if (mediaQuery.matches) {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
-    }
-
-    // 5. Cleanup function to remove the listener when the component unmounts.
-    return () => {
-        mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      }
     };
-}, [theme]); // This effect re-runs ONLY when the user's choice (the 'theme' state) changes.
+
+    applyTheme();
+    localStorage.setItem('theme', theme);
+
+    // If system theme is selected, we need to listen for OS-level changes
+    if (theme === 'system') {
+      mediaQuery.addEventListener('change', applyTheme);
+      return () => mediaQuery.removeEventListener('change', applyTheme);
+    }
+  }, [theme]);
 
 
   // Effect untuk pembaruan Service Worker
