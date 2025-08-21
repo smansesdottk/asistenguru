@@ -4,48 +4,73 @@ import type { UserProfile, PublicConfig, Theme } from './types';
 import LoginPage from './components/LoginPage';
 import ChatPage from './components/ChatPage';
 
+// Helper function to safely get the initial theme from localStorage
+function getInitialTheme(): Theme {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const savedTheme = window.localStorage.getItem('theme');
+    if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') {
+      return savedTheme;
+    }
+  }
+  return 'system';
+}
+
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [config, setConfig] = useState<PublicConfig | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'system');
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   // State untuk notifikasi pembaruan PWA
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
 
-  // Effect to handle theme changes
+  // Effect to apply theme based on user's choice ('theme' state)
   useEffect(() => {
     const root = window.document.documentElement;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    // Fungsi untuk menerapkan tema berdasarkan state
-    const applyTheme = () => {
-      const isSystemDark = mediaQuery.matches;
-
-      if (theme === 'dark' || (theme === 'system' && isSystemDark)) {
+    // Apply the correct class based on the current theme state
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else if (theme === 'light') {
+      root.classList.remove('dark');
+    } else { // theme is 'system'
+      if (isSystemDark) {
         root.classList.add('dark');
       } else {
         root.classList.remove('dark');
       }
-    };
+    }
 
-    // Terapkan tema saat komponen dimuat atau saat 'theme' berubah
-    applyTheme();
     localStorage.setItem('theme', theme);
+  }, [theme]);
 
-    // Listener untuk perubahan tema sistem
-    const handleSystemChange = () => {
-      // Hanya terapkan perubahan jika tema saat ini adalah 'sistem'
-      if (theme === 'system') {
-        applyTheme();
+  // Separate effect to listen for OS-level theme changes. This runs only once.
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const handleSystemChange = (e: MediaQueryListEvent) => {
+      // Check localStorage directly to get the user's *current* preference.
+      // We don't use the 'theme' state here to avoid stale closures.
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'system' || !savedTheme) {
+        if (e.matches) {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
       }
     };
 
     mediaQuery.addEventListener('change', handleSystemChange);
-    return () => mediaQuery.removeEventListener('change', handleSystemChange);
 
-  }, [theme]);
+    return () => {
+      mediaQuery.removeEventListener('change', handleSystemChange);
+    };
+  }, []); // Empty array means this effect runs only once on mount.
+
 
   // Effect untuk pembaruan Service Worker
   useEffect(() => {
