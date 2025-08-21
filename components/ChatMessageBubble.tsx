@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import type { ChatMessage } from '../types';
 import { MessageRole } from '../types';
 import UserIcon from './icons/UserIcon';
@@ -9,6 +9,8 @@ import DataChart from './DataChart';
 import CopyIcon from './icons/CopyIcon';
 import ShareIcon from './icons/ShareIcon';
 import DeleteIcon from './icons/DeleteIcon';
+import PdfIcon from './icons/PdfIcon';
+import type { Chart as ChartJS } from 'chart.js';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -33,6 +35,7 @@ const SimpleMarkdownRenderer: React.FC<{ text: string }> = ({ text }) => {
 
 const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete }) => {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+  const chartRefs = useRef<(ChartJS | null)[]>([]);
 
   const isUser = message.role === MessageRole.USER;
   const showShareButton = typeof navigator.share === 'function';
@@ -41,6 +44,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
   const icon = isUser ? <UserIcon /> : <BotIcon />;
 
   const contentParts = useMemo(() => {
+    chartRefs.current = []; // Reset refs on re-render
     if (isUser || !message.text) {
       return [{ type: 'text', content: message.text }];
     }
@@ -119,6 +123,70 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
     }
   };
 
+  const handleExportPdf = async () => {
+    const { default: jsPDF } = await import('jspdf');
+    const { default: autoTable } = await import('jspdf-autotable');
+    
+    const doc = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    let yPos = 15; // Starting Y position with margin
+    const margin = 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const usableWidth = pageWidth - (margin * 2);
+
+    const checkAndAddPage = (requiredHeight: number) => {
+      if (yPos + requiredHeight > doc.internal.pageSize.getHeight() - margin) {
+        doc.addPage();
+        yPos = margin;
+      }
+    };
+    
+    let chartCounter = 0;
+    for (const part of contentParts) {
+      if (part.type === 'text' && part.content.trim()) {
+        const splitText = doc.splitTextToSize(part.content, usableWidth);
+        const textHeight = splitText.length * 5; // Approximate height
+        checkAndAddPage(textHeight);
+        doc.text(splitText, margin, yPos);
+        yPos += textHeight + 5;
+      } else if (part.type === 'table') {
+        const lines = part.content.trim().split('\n').filter((line: string) => line.includes('|'));
+        if (lines.length >= 2) {
+          const parseRow = (row: string): string[] => row.slice(1, -1).split('|').map(cell => cell.trim());
+          const headers = parseRow(lines[0]);
+          const body = lines.slice(2).map(line => parseRow(line));
+          
+          autoTable(doc, {
+            head: [headers],
+            body: body,
+            startY: yPos,
+            margin: { left: margin, right: margin },
+          });
+          yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+      } else if (part.type === 'chart') {
+        const chartRef = chartRefs.current[chartCounter];
+        chartCounter++;
+        if (chartRef) {
+          const imgData = chartRef.toBase64Image();
+          const imgProps = doc.getImageProperties(imgData);
+          const pdfHeight = (imgProps.height * usableWidth) / imgProps.width;
+          checkAndAddPage(pdfHeight);
+          doc.addImage(imgData, 'PNG', margin, yPos, usableWidth, pdfHeight);
+          yPos += pdfHeight + 10;
+        }
+      }
+    }
+    
+    doc.save(`pesan-chat-${new Date().getTime()}.pdf`);
+  };
+
+  let chartIndexCounter = 0;
+
   return (
     <div className={`group flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
       <div className="flex-shrink-0">{icon}</div>
@@ -132,7 +200,14 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
             }
             if (part.type === 'chart') {
               const chart = part.content;
-              return <DataChart key={index} type={chart.type} title={chart.title} chartData={chart.data} />;
+              const currentChartIndex = chartIndexCounter++;
+              return <DataChart 
+                        key={index} 
+                        ref={(el: ChartJS | null) => { if(el) chartRefs.current[currentChartIndex] = el; }} 
+                        type={chart.type} 
+                        title={chart.title} 
+                        chartData={chart.data} 
+                     />;
             }
             return part.content.trim() ? <p key={index} className="whitespace-pre-wrap"><SimpleMarkdownRenderer text={part.content} /></p> : null;
           })}
@@ -144,6 +219,11 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
           {showShareButton && (
             <button onClick={handleShare} title="Bagikan" className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">
               <ShareIcon />
+            </button>
+          )}
+          {!isUser && (
+            <button onClick={handleExportPdf} title="Simpan sebagai PDF" className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">
+              <PdfIcon />
             </button>
           )}
           <button onClick={onDelete} title="Hapus" className="p-2 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-500">

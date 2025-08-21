@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { forwardRef } from 'react';
 import { Pie, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -31,7 +32,7 @@ interface ChartProps {
   title: string;
 }
 
-const DataChart: React.FC<ChartProps> = ({ type, chartData, title }) => {
+const DataChart = forwardRef<ChartJS, ChartProps>(({ type, chartData, title }, ref) => {
   const isDarkMode = document.documentElement.classList.contains('dark');
 
   const options = {
@@ -82,11 +83,11 @@ const DataChart: React.FC<ChartProps> = ({ type, chartData, title }) => {
   return (
     <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 p-4 rounded-lg my-4 shadow-md">
       <div className="relative h-64 md:h-80">
-        {type === 'pie' && <Pie data={chartData} options={options} />}
-        {type === 'bar' && <Bar data={chartData} options={options} />}
+        {type === 'pie' && <Pie data={chartData} options={options} ref={ref as React.Ref<ChartJS<'pie'>>} />}
+        {type === 'bar' && <Bar data={chartData} options={options} ref={ref as React.Ref<ChartJS<'bar'>>} />}
       </div>
     </div>
   );
-};
+});
 
 export default DataChart;
