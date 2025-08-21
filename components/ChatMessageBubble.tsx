@@ -192,7 +192,31 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
         const chartRef = chartRefs.current[chartCounter];
         chartCounter++;
         if (chartRef) {
+          const canvas = chartRef.canvas;
+          const ctx = canvas.getContext('2d');
+
+          if (ctx) {
+            // Save the current state to avoid side-effects
+            ctx.save();
+            // This composite operation draws the new shape BEHIND existing content
+            ctx.globalCompositeOperation = 'destination-over';
+            
+            // Set fill style based on current theme to match chart's container
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            ctx.fillStyle = isDarkMode ? '#1f2937' : '#ffffff'; // Corresponds to Tailwind's dark:bg-gray-800 and bg-white
+            
+            // Draw the background rectangle
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+          
+          // Now, generate the image which will include our new background
           const imgData = chartRef.toBase64Image();
+
+          // Restore the canvas context to its original state, removing our changes
+          if (ctx) {
+            ctx.restore();
+          }
+
           const imgProps = doc.getImageProperties(imgData);
           const pdfHeight = (imgProps.height * usableWidth) / imgProps.width;
           checkAndAddPage(pdfHeight + 10); // Check page break before adding image
