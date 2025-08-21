@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import type { ChatConversation, Theme } from '../types';
+import type { ChatConversation } from '../types';
 import PlusIcon from './icons/PlusIcon';
 import DeleteIcon from './icons/DeleteIcon';
 import PrintIcon from './icons/PrintIcon';
-import ThemeSwitcher from './ThemeSwitcher';
 
 interface SidebarProps {
   conversations: ChatConversation[];
@@ -13,8 +12,6 @@ interface SidebarProps {
   onDeleteConversation: (id: string) => void;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -25,8 +22,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   onDeleteConversation,
   isOpen,
   setIsOpen,
-  theme,
-  setTheme,
 }) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -97,7 +92,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         <div className="p-2 border-t border-slate-200 dark:border-gray-700">
-            <ThemeSwitcher theme={theme} setTheme={setTheme} />
             <button
               onClick={() => window.print()}
               className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 rounded-md hover:bg-slate-200 dark:hover:bg-gray-800 transition-colors"

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { UserProfile, PublicConfig, Theme } from './types';
+import type { UserProfile, PublicConfig } from './types';
 import LoginPage from './components/LoginPage';
 import ChatPage from './components/ChatPage';
 
@@ -8,36 +8,30 @@ const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [config, setConfig] = useState<PublicConfig | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'system');
 
 
   // State untuk notifikasi pembaruan PWA
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
 
-  // Effect to apply selected theme (light/dark/system)
+  // Effect to automatically apply system theme (light/dark)
   useEffect(() => {
-    const root = window.document.documentElement;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const root = window.document.documentElement;
 
-    const applyTheme = () => {
-      // Always clean up first
-      root.classList.remove('dark');
-
-      if (theme === 'dark' || (theme === 'system' && mediaQuery.matches)) {
-        root.classList.add('dark');
-      }
+    const applySystemTheme = (e: { matches: boolean }) => {
+      root.classList.toggle('dark', e.matches);
     };
 
-    applyTheme();
-    localStorage.setItem('theme', theme);
+    // Initial check
+    applySystemTheme(mediaQuery);
 
-    // If system theme is selected, we need to listen for OS-level changes
-    if (theme === 'system') {
-      mediaQuery.addEventListener('change', applyTheme);
-      return () => mediaQuery.removeEventListener('change', applyTheme);
-    }
-  }, [theme]);
+    // Listen for changes
+    mediaQuery.addEventListener('change', applySystemTheme);
+
+    // Cleanup
+    return () => mediaQuery.removeEventListener('change', applySystemTheme);
+  }, []);
 
 
   // Effect untuk pembaruan Service Worker
@@ -147,8 +141,6 @@ const App: React.FC = () => {
       onLogout={handleLogout} 
       isUpdateAvailable={isUpdateAvailable}
       onUpdate={handleUpdate}
-      theme={theme}
-      setTheme={setTheme}
     />
   ) : (
     <LoginPage config={config} onLogin={handleLogin} />
