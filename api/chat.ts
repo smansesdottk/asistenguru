@@ -1,4 +1,3 @@
-
 // Creator: A. Indra Malik - SMAN11MKS
 import { GoogleGenAI, Type } from "@google/genai";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -229,8 +228,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error('Request body is missing.');
     }
 
-    const { messages } = req.body;
+    const { messages, model } = req.body;
+    const modelToUse = model || 'gemini-2.5-flash'; // Default to 2.5 flash
     const userMessage = messages[messages.length - 1];
+    
     if (!messages || !Array.isArray(messages) || messages.length === 0 || !userMessage) {
       throw new Error('Invalid request body: "messages" array is required.');
     }
@@ -276,7 +277,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Step 1: Intent Extraction - Find the class name
       const intentResponse = await performAiActionWithRetry(async (ai) =>
         ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: modelToUse,
           contents: `Analyze the user's message to see if they are asking for student data from a specific class (Rombel). If they are, extract the exact class name. If they are not asking about a specific class, return null for the className. User message: "${userMessage.text}"`,
           config: {
             responseMimeType: "application/json",
@@ -394,7 +395,7 @@ Jangan mengarang informasi.`;
 
     const systemInstructionWithViz = `${finalSystemInstruction}
 PENTING: Jika pengguna meminta visualisasi data (seperti grafik, diagram, perbandingan, rekapitulasi, atau distribusi), Anda HARUS menyertakan **satu atau lebih blok data grafik** dalam format JSON di dalam respons teks Anda.
-Misalnya, jika diminta "grafik batang dan lingkaran", Anda harus membuat KEDUA-DUANYA.
+Misalnya, jika diminta "grafik batang dan lingkaran", Anda harus membuat KEDUA-DUAnya.
 - Gunakan tipe grafik 'pie' untuk proporsi (seperti persentase gender).
 - Gunakan tipe grafik 'bar' untuk perbandingan antar kategori (seperti jumlah siswa per kelas).
 Struktur JSON untuk setiap grafik adalah: \`{"type":"pie|bar","title":"Judul Grafik","data":{"labels":[...],"datasets":[{"label":"...","data":[...],"backgroundColor":["#hex",...]}]}}\`
@@ -419,7 +420,7 @@ Jika tidak ada permintaan visualisasi, jawablah seperti biasa tanpa tag atau JSO
     
     const resultStream = await performAiActionWithRetry(async (ai) => {
         const chat = ai.chats.create({
-          model: 'gemini-2.5-flash',
+          model: modelToUse,
           config: { systemInstruction: finalPrompt },
           history: history,
         });

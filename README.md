@@ -102,22 +102,18 @@ Ini adalah bagian terpenting. Di halaman "Configure Project", buka bagian **"Env
 
 Untuk meningkatkan akurasi AI, Anda bisa secara eksplisit memberitahu aplikasi bagaimana data Anda saling terhubung menggunakan variabel `SHEET_RELATIONSHIPS`. **Ini bersifat opsional. Jika Anda kosongkan, AI akan mencoba menebak hubungannya sendiri.**
 
-Format baru ini lebih mudah dibaca dan tahan terhadap perubahan (misalnya jika Anda memindahkan kolom di Google Sheet).
-
 -   **Tujuan**: Memberitahu sistem, misalnya, "Kolom 'NISN' di sheet 'SISWA' sama dengan kolom 'NISN' di sheet 'PRESENSI SHALAT'".
--   **Format**: `NAMA_SHEET_1.NAMA_KOLOM_1=NAMA_SHEET_2.NAMA_KOLOM_2`. Jika ada lebih dari satu hubungan, pisahkan dengan koma.
+-   **Format**: `NAMA_SHEET_1.NAMA_KOLOM_1=NAMA_SHEET_2.NAMA_KOLOM_2`. Jika ada lebih dari satu grup hubungan, pisahkan dengan koma.
 -   **Contoh Praktis**:
-    -   Misalkan `SHEET_NAMES` Anda berisi `SISWA,PELANGGARAN,PRESENSI SHALAT`.
-    -   Di sheet `SISWA`, Anda memiliki kolom `NISN` dan `Nama`.
-    -   Di sheet `PRESENSI SHALAT`, Anda punya kolom `NISN`.
-    -   Di sheet `PELANGGARAN`, Anda punya kolom `NAMA` (yang berisi nama siswa).
-    -   Untuk menghubungkan data ini, nilai `SHEET_RELATIONSHIPS` Anda adalah:
+    -   Misalkan `SHEET_NAMES` Anda berisi `SISWA, PELANGGARAN, PRESENSI SHALAT, PEMBELAJARAN, GURU, PTK`.
+    -   Untuk menghubungkan data ini, nilai `SHEET_RELATIONSHIPS` Anda bisa seperti ini:
         ```
-        SISWA.NISN=PRESENSI SHALAT.NISN,SISWA.Nama=PELANGGARAN.NAMA
+        SISWA."Rombel Saat Ini"=PEMBELAJARAN."Nama Rombel",SISWA.Nama=PELANGGARAN.NAMA,SISWA.NISN="PRESENSI SHALAT".NISN,GURU.NUPTK=PEMBELAJARAN.NUPTK=PTK.NUPTK
         ```
 -   **Penting**:
     -   Nama sheet (`SISWA`) harus cocok dengan yang ada di `SHEET_NAMES` Anda.
-    -   Nama kolom (`NISN`, `Nama`, `NAMA`) harus **persis sama** dengan header kolom di file Google Sheet Anda.
+    -   Nama kolom (`Nama`, `NAMA`) harus **persis sama** dengan header kolom di file Google Sheet Anda, termasuk perbedaan huruf besar/kecil.
+    -   Jika nama sheet atau kolom mengandung spasi (seperti `"Rombel Saat Ini"` atau `"PRESENSI SHALAT"`), **wajib** dibungkus dengan tanda kutip ganda.
 
 #### Langkah 6: Mulai Deployment
 

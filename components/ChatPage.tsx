@@ -7,6 +7,7 @@ import StatusIndicator from './StatusIndicator';
 import Sidebar from './Sidebar';
 import MenuIcon from './icons/MenuIcon';
 import PromptStarters from './PromptStarters';
+import ModelSelector from './ModelSelector';
 
 type Status = 'checking' | 'connected' | 'error' | 'unconfigured';
 interface StatusDetail {
@@ -34,6 +35,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
   const [promptStarters, setPromptStarters] = useState<string[]>([]);
   const [isLoadingStarters, setIsLoadingStarters] = useState(true);
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false); // State untuk mencegah race condition
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
@@ -86,6 +88,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
             title: "Riwayat Chat Sebelumnya",
             messages: oldMessages,
             createdAt: new Date().toISOString(),
+            model: 'gemini-1.5-flash', // Default model for old chats
           };
           setConversations([newConversation]);
           setActiveConversationId(newConversation.id);
@@ -152,6 +155,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
 
   const handleNewChat = () => {
     setActiveConversationId(null);
+    setSelectedModel('gemini-2.5-flash'); // Reset to default model
     setIsSidebarOpen(false);
   };
   
@@ -189,6 +193,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
         title: inputText.split(' ').slice(0, 5).join(' '),
         messages: [userMessage, { role: MessageRole.MODEL, text: '' }],
         createdAt: new Date().toISOString(),
+        model: selectedModel,
       };
       setConversations(prev => [newConversation, ...prev]);
       setActiveConversationId(newConversation.id);
@@ -212,7 +217,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: messageHistory }),
+        body: JSON.stringify({ 
+          messages: messageHistory,
+          model: conversationToUpdate.model || 'gemini-2.5-flash', // Fallback for old chats
+        }),
       });
 
       if (!response.ok) {
@@ -331,7 +339,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
           className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6"
         >
           {activeMessages.length === 0 && !isLoading && (
-            <div className="flex justify-center items-center h-full">
+            <div className="flex flex-col justify-center items-center h-full">
+                <ModelSelector 
+                  selectedModel={selectedModel} 
+                  onModelChange={setSelectedModel}
+                  disabled={isLoading}
+                />
                 <PromptStarters 
                     prompts={promptStarters}
                     onSelectPrompt={handleSendMessage}
