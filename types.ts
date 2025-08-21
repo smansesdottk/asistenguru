@@ -52,3 +52,5 @@ export interface PublicConfig {
   appBaseUrl?: string;
   googleWorkspaceDomain?: string;
 }
+
+export type Theme = 'system' | 'light' | 'dark';

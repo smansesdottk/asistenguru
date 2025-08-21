@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { ChatMessage, UserProfile, PublicConfig, ChatConversation } from '../types';
+import type { ChatMessage, UserProfile, PublicConfig, ChatConversation, Theme } from '../types';
 import { MessageRole } from '../types';
 import ChatMessageBubble from './ChatMessageBubble';
 import ChatInput from './ChatInput';
@@ -21,13 +21,15 @@ interface ChatPageProps {
   onLogout: () => void;
   isUpdateAvailable: boolean;
   onUpdate: () => void;
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
 }
 
 const OLD_CHAT_HISTORY_KEY = 'chat_history_v1';
 const CHAT_HISTORY_KEY = 'chat_history_v2';
 
 
-const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAvailable, onUpdate }) => {
+const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAvailable, onUpdate, theme, setTheme }) => {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -312,6 +314,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
         onDeleteConversation={handleDeleteConversation}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        theme={theme}
+        setTheme={setTheme}
       />
 
       <div className="flex flex-col flex-1">

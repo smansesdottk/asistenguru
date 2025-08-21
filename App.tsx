@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { UserProfile, PublicConfig } from './types';
+import type { UserProfile, PublicConfig, Theme } from './types';
 import LoginPage from './components/LoginPage';
 import ChatPage from './components/ChatPage';
 
@@ -8,10 +8,31 @@ const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [config, setConfig] = useState<PublicConfig | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'system');
 
   // State untuk notifikasi pembaruan PWA
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+
+  // Effect to handle theme changes
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    
+    root.classList.toggle('dark', isDark);
+    localStorage.setItem('theme', theme);
+    
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (theme === 'system') {
+        root.classList.toggle('dark', mediaQuery.matches);
+      }
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+
+  }, [theme]);
 
   // Effect untuk pembaruan Service Worker
   useEffect(() => {
@@ -120,6 +141,8 @@ const App: React.FC = () => {
       onLogout={handleLogout} 
       isUpdateAvailable={isUpdateAvailable}
       onUpdate={handleUpdate}
+      theme={theme}
+      setTheme={setTheme}
     />
   ) : (
     <LoginPage config={config} onLogin={handleLogin} />
