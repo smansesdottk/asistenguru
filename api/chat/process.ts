@@ -105,10 +105,14 @@ function getSchoolDataContext(schoolData: Record<string, string>): Record<string
 
 
 async function processJob(jobId: string) {
+  const jobKey = `job:${jobId}`;
+  let jobData: any;
+
   try {
-    const jobKey = `job:${jobId}`;
-    let jobData: any = await kv.get(jobKey);
-    if (!jobData) throw new Error(`Job ${jobId} not found.`);
+    jobData = await kv.get(jobKey);
+    if (!jobData) {
+      throw new Error(`Job ${jobId} not found.`);
+    }
 
     // 1. Set status to PROCESSING
     jobData.status = 'PROCESSING';
@@ -178,12 +182,14 @@ async function processJob(jobId: string) {
   } catch (error) {
     console.error(`Error processing job ${jobId}:`, error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during processing.";
-    // Update the job with the failure status
-    const jobData: any = await kv.get(`job:${jobId}`) || {};
-    jobData.status = 'FAILED';
-    jobData.error = errorMessage;
-    jobData.updatedAt = Date.now();
-    await kv.set(`job:${jobId}`, jobData, { ex: 3600 });
+    
+    // If jobData is not loaded yet, we load it. If it doesn't exist, we create an empty object.
+    const jobDataToUpdate = jobData || (await kv.get(jobKey)) || {};
+    
+    jobDataToUpdate.status = 'FAILED';
+    jobDataToUpdate.error = errorMessage;
+    jobDataToUpdate.updatedAt = Date.now();
+    await kv.set(jobKey, jobDataToUpdate, { ex: 3600 });
   }
 }
 

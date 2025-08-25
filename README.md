@@ -23,7 +23,7 @@ Asisten Guru AI adalah aplikasi web modern yang dirancang untuk memberdayakan pa
 - **Backend**: Vercel Serverless Functions (TypeScript)
 - **Model AI**: Google Gemini API (`gemini-2.5-flash`)
 - **Sumber Data**: Google Sheets (diakses sebagai CSV)
-- **Pekerjaan Latar Belakang**: **Vercel KV** (untuk manajemen antrian & status)
+- **Pekerjaan Latar Belakang**: **Vercel KV** via **Upstash** (untuk manajemen antrian & status)
 - **Autentikasi**: `jose` untuk JWT, Google OAuth 2.0
 - **Platform**: Vercel
 
@@ -92,11 +92,13 @@ Sebelum memulai, pastikan Anda sudah memiliki semua informasi berikut. Ini akan 
 
 Ini adalah bagian terpenting. Di halaman "Configure Project", konfigurasikan dua hal:
 
-**1. Hubungkan Vercel KV Store (Wajib)**
-Fitur anti-timeout aplikasi memerlukan Vercel KV.
+**1. Hubungkan Vercel KV Store via Upstash (Wajib)**
+Fitur anti-timeout aplikasi memerlukan Vercel KV. Sejak pembaruan Vercel, KV sekarang terintegrasi melalui Upstash.
 - Gulir ke bawah ke bagian **"Storage"**.
-- Klik **"Connect Store"** di sebelah "KV (Redis)".
-- Pilih **"Create New"**, beri nama (misalnya, `asisten-guru-kv`), pilih region terdekat, dan klik **"Create and Connect"**.
+- Cari **Upstash** di bagian **"Marketplace Database Providers"** dan klik tombol **">"** atau **"Connect"**.
+- Ikuti petunjuk untuk membuat database Upstash Redis baru. Anda bisa memilih paket gratis (*free tier*).
+- Beri nama (misalnya, `asisten-guru-kv`), pilih region terdekat, dan klik **"Create and Connect"**.
+- Setelah terhubung, Vercel akan **secara otomatis** menambahkan variabel lingkungan `KV_*` yang diperlukan ke proyek Anda.
 
 **2. Atur Environment Variables**
 Buka bagian **"Environment Variables"**. Anda perlu menambahkan semua konfigurasi dari file `env.txt`.
@@ -144,7 +146,7 @@ Metode ini mengotomatiskan proses penyalinan proyek dan penyiapan di Vercel. Ini
 2.  Anda akan diminta untuk login dengan akun GitHub Anda.
 3.  Vercel akan meminta Anda membuat repositori Git baru di akun Anda (ini adalah salinan dari proyek asli). Beri nama sesuai keinginan Anda, lalu klik **"Create"**.
 4.  Setelah itu, Anda akan langsung diarahkan ke halaman **"Configure Project"** di Vercel.
-5.  Sekarang, ikuti **Langkah 4, 5, dan 6** dari **Metode 1** di atas untuk menghubungkan **Vercel KV**, mengisi *Environment Variables*, men-deploy, dan melakukan konfigurasi final. Prosesnya persis sama dari titik ini.
+5.  Sekarang, ikuti **Langkah 4, 5, dan 6** dari **Metode 1** di atas untuk menghubungkan **Vercel KV via Upstash**, mengisi *Environment Variables*, men-deploy, dan melakukan konfigurasi final. Prosesnya persis sama dari titik ini.
 
 ---
 
