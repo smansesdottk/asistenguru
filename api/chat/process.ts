@@ -1,9 +1,8 @@
 // Creator: A. Indra Malik - SMAN11MKS
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, type GenerateContentResponse } from "@google/genai";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from "@vercel/kv";
 import Papa from "papaparse";
-import type { UserProfile } from "../_utils/auth";
 
 // --- START: Self-contained types to avoid path issues ---
 enum MessageRole {
@@ -35,24 +34,33 @@ async function performAiActionWithRetry<T>(action: (ai: GoogleGenAI) => Promise<
     const apiKeys = apiKeysString.split(',').map(k => k.trim()).filter(Boolean);
     if (apiKeys.length === 0) throw new Error("GEMINI_API_KEYS environment variable not configured.");
     
+    const initialKeyIndex = keyIndex;
+    let lastError: any = new Error("No API keys were available or tried.");
+
     for (let i = 0; i < apiKeys.length; i++) {
-        const currentKeyIndex = (keyIndex + i) % apiKeys.length;
+        const currentKeyIndex = (initialKeyIndex + i) % apiKeys.length;
         const apiKey = apiKeys[currentKeyIndex];
         try {
             const ai = new GoogleGenAI({ apiKey });
             const result = await action(ai);
-            keyIndex = (currentKeyIndex + 1) % apiKeys.length;
+            keyIndex = (currentKeyIndex + 1) % apiKeys.length; // Rotate to the next key for the next global call
             return result;
         } catch (error) {
+            lastError = error;
             const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
             const isRateLimitError = errorMessage.includes('429') || errorMessage.includes('resource_exhausted') || errorMessage.includes('quota');
-            if (!isRateLimitError) {
+            
+            if (isRateLimitError) {
+                console.log(`Key index ${currentKeyIndex} is rate-limited. Trying next key...`);
+            } else {
+                // For other errors, we still rotate the key but fail fast as it might not be a retriable issue.
                 keyIndex = (currentKeyIndex + 1) % apiKeys.length;
                 throw error;
             }
         }
     }
-    throw new Error("Semua koneksi API sedang sibuk. Silakan coba lagi nanti.");
+    // If we've looped through all keys and they are all rate-limited
+    throw new Error(`Semua koneksi API sedang sibuk. Silakan coba lagi nanti. Underlying error: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
 }
 // --- END: AI Logic ---
 
@@ -141,6 +149,7 @@ async function processJob(jobId: string) {
     // 3. Filtering Step
     const focusedData: Record<string, string> = {};
     for (const search of searches) {
+        if (!search.sheetName) continue;
         const csvData = schoolData[search.sheetName.toUpperCase()];
         if (!csvData) continue;
         if (!search.filters || search.filters.length === 0) {
@@ -152,7 +161,9 @@ async function processJob(jobId: string) {
                     filteredRows = filteredRows.filter(row => String(row[filter.column] || '').toLowerCase().includes(String(filter.value).toLowerCase()));
                 }
             }
-            if (filteredRows.length > 0) focusedData[search.sheetName] = Papa.unparse(filteredRows);
+            if (filteredRows.length > 0) {
+              focusedData[search.sheetName] = Papa.unparse(filteredRows);
+            }
         }
     }
 
@@ -168,9 +179,15 @@ async function processJob(jobId: string) {
         finalSystemInstruction = `Anda adalah "Asisten Guru AI". Gunakan HANYA data CSV dalam format string JSON berikut untuk menjawab pertanyaan pengguna. Kunci JSON adalah nama data. Sajikan jawaban yang jelas, buat tabel jika diminta. Jika diminta visualisasi (grafik), buat blok JSON yang dibungkus [CHART_DATA]...[/CHART_DATA] dengan struktur: {"type":"pie|bar","title":"...","data":{...}}. Data: ${JSON.stringify(focusedData)}`;
     }
     
-    const history = messages.slice(0, -1).map((msg: ChatMessage) => ({ role: msg.role, parts: [{ text: msg.text }] }));
-    const chat = (new GoogleGenAI({apiKey: process.env.GEMINI_API_KEYS?.split(',')[0]})).chats.create({ model: modelToUse, config: { systemInstruction: finalSystemInstruction }, history });
-    const result = await chat.sendMessage({ message: userMessage.text });
+    const history = messages.slice(0, -1).map((msg: ChatMessage) => ({
+      role: msg.role,
+      parts: [{ text: msg.text }],
+    }));
+
+    const result: GenerateContentResponse = await performAiActionWithRetry(async (ai) => {
+        const chat = ai.chats.create({ model: modelToUse, config: { systemInstruction: finalSystemInstruction }, history });
+        return chat.sendMessage({ message: userMessage.text });
+    });
 
     // 5. Finalize Job
     jobData.status = 'COMPLETED';
@@ -183,13 +200,20 @@ async function processJob(jobId: string) {
     console.error(`Error processing job ${jobId}:`, error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during processing.";
     
-    // If jobData is not loaded yet, we load it. If it doesn't exist, we create an empty object.
-    const jobDataToUpdate = jobData || (await kv.get(jobKey)) || {};
-    
-    jobDataToUpdate.status = 'FAILED';
-    jobDataToUpdate.error = errorMessage;
-    jobDataToUpdate.updatedAt = Date.now();
-    await kv.set(jobKey, jobDataToUpdate, { ex: 3600 });
+    // Fortified catch block: prevent this from crashing the function
+    try {
+        const jobDataToUpdate = jobData || await kv.get(jobKey);
+        if (jobDataToUpdate) {
+            jobDataToUpdate.status = 'FAILED';
+            jobDataToUpdate.error = errorMessage;
+            jobDataToUpdate.updatedAt = Date.now();
+            await kv.set(jobKey, jobDataToUpdate, { ex: 3600 });
+        } else {
+            console.error(`Failed to update status for job ${jobId} because job data could not be retrieved from KV store.`);
+        }
+    } catch (updateError) {
+        console.error(`CRITICAL: Failed to update job ${jobId} status to FAILED. Further errors may occur.`, updateError);
+    }
   }
 }
 
