@@ -1,12 +1,13 @@
-
 # Asisten Guru AI
+
+**Versi: 3.0.1**
 
 Asisten Guru AI adalah aplikasi web modern yang dirancang untuk memberdayakan para guru dengan menyediakan akses cepat dan percakapan ke data sekolah yang relevan. Dibuat oleh A. Indra Malik (SMAN 11 Makassar). Dibangun dengan tumpukan teknologi serverless menggunakan Vercel dan didukung oleh model bahasa canggih dari Google Gemini, aplikasi ini dapat menjawab pertanyaan terkait siswa, guru, jadwal, dan informasi sekolah lainnya secara instan.
 
 ## ✨ Fitur Utama
 
 - **Antarmuka Percakapan**: Tanyakan apa pun dalam bahasa alami dan dapatkan jawaban yang relevan dari AI.
-- **Akses Data Terpusat**: Mengambil data secara real-time dari beberapa Google Sheets, memastikan informasi selalu up-to-date.
+- **Pengambilan Data Cerdas (AI-Powered RAG)**: AI secara otomatis menganalisis pertanyaan Anda untuk menentukan dan mengambil hanya data yang paling relevan dari Google Sheets sebelum merumuskan jawaban, memastikan akurasi dan kecepatan.
 - **Keamanan Fleksibel**:
   - **Otentikasi Google OAuth 2.0 (Opsional)**: Jika dikonfigurasi, dapat memastikan hanya pengguna dengan akun Google Workspace institusi yang dapat login.
   - **Mode Login Hanya Admin**: Jika kredensial Google tidak diatur, aplikasi secara otomatis beralih ke mode login aman hanya dengan kata sandi admin.
@@ -98,30 +99,13 @@ Ini adalah bagian terpenting. Di halaman "Configure Project", buka bagian **"Env
     *   **`ORGANIZATION_DATA_SOURCES` & `SHEET_NAMES`**: Pastikan urutan URL dan Nama sama persis.
     *   **Login Google (Opsional)**: Jika tidak ingin pakai login Google, biarkan `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_WORKSPACE_DOMAIN` **kosong**. Aplikasi akan otomatis beralih ke mode "Hanya Admin".
 
-#### Langkah 5: (Opsional) Konfigurasi Hubungan Data
-
-Untuk meningkatkan akurasi AI, Anda bisa secara eksplisit memberitahu aplikasi bagaimana data Anda saling terhubung menggunakan variabel `SHEET_RELATIONSHIPS`. **Ini bersifat opsional. Jika Anda kosongkan, AI akan mencoba menebak hubungannya sendiri.**
-
--   **Tujuan**: Memberitahu sistem, misalnya, "Kolom 'NISN' di sheet 'SISWA' sama dengan kolom 'NISN' di sheet 'PRESENSI SHALAT'".
--   **Format**: `NAMA_SHEET_1.NAMA_KOLOM_1=NAMA_SHEET_2.NAMA_KOLOM_2`. Jika ada lebih dari satu grup hubungan, pisahkan dengan koma.
--   **Contoh Praktis**:
-    -   Misalkan `SHEET_NAMES` Anda berisi `SISWA, PELANGGARAN, PRESENSI SHALAT, PEMBELAJARAN, GURU, PTK`.
-    -   Untuk menghubungkan data ini, nilai `SHEET_RELATIONSHIPS` Anda bisa seperti ini:
-        ```
-        SISWA."Rombel Saat Ini"=PEMBELAJARAN."Nama Rombel",SISWA.Nama=PELANGGARAN.NAMA,SISWA.NISN="PRESENSI SHALAT".NISN,GURU.NUPTK=PEMBELAJARAN.NUPTK=PTK.NUPTK
-        ```
--   **Penting**:
-    -   Nama sheet (`SISWA`) harus cocok dengan yang ada di `SHEET_NAMES` Anda.
-    -   Nama kolom (`Nama`, `NAMA`) harus **persis sama** dengan header kolom di file Google Sheet Anda, termasuk perbedaan huruf besar/kecil.
-    -   Jika nama sheet atau kolom mengandung spasi (seperti `"Rombel Saat Ini"` atau `"PRESENSI SHALAT"`), **wajib** dibungkus dengan tanda kutip ganda.
-
-#### Langkah 6: Mulai Deployment
+#### Langkah 5: Mulai Deployment
 
 Setelah semua variabel terisi, klik tombol **"Deploy"**. Vercel akan mulai membangun dan men-deploy aplikasi Anda. Proses ini mungkin memakan waktu beberapa menit.
 
 Setelah selesai, Vercel akan memberikan Anda URL produksi (contoh: `https://asistenguru-xxxx.vercel.app`). **Selamat, aplikasi Anda sudah online!** Namun, masih ada satu langkah terakhir yang krusial.
 
-#### Langkah 7: Konfigurasi Final (Wajib Agar Login Berfungsi!)
+#### Langkah 6: Konfigurasi Final (Wajib Agar Login Berfungsi!)
 
 Sekarang kita perbaiki placeholder `APP_BASE_URL` dan mengonfigurasi Google.
 
@@ -151,7 +135,7 @@ Metode ini mengotomatiskan proses penyalinan proyek dan penyiapan di Vercel. Ini
 2.  Anda akan diminta untuk login dengan akun GitHub Anda.
 3.  Vercel akan meminta Anda membuat repositori Git baru di akun Anda (ini adalah salinan dari proyek asli). Beri nama sesuai keinginan Anda, lalu klik **"Create"**.
 4.  Setelah itu, Anda akan langsung diarahkan ke halaman **"Configure Project"** di Vercel.
-5.  Sekarang, ikuti **Langkah 4, 5, 6, dan 7** dari **Metode 1** di atas untuk mengisi *Environment Variables*, men-deploy, dan melakukan konfigurasi final. Prosesnya persis sama dari titik ini.
+5.  Sekarang, ikuti **Langkah 4, 5, dan 6** dari **Metode 1** di atas untuk mengisi *Environment Variables*, men-deploy, dan melakukan konfigurasi final. Prosesnya persis sama dari titik ini.
 
 ---
 
@@ -169,7 +153,7 @@ Gunakan metode ini untuk men-deploy langsung dari terminal tanpa menghubungkan r
     vercel build --prod
     vercel deploy --prebuilt --prod
     ```
-7.  **Konfigurasi Final**: Ikuti **Langkah 7** dari "Metode 1" di atas untuk memperbarui `APP_BASE_URL` dan URI pengalihan Google.
+7.  **Konfigurasi Final**: Ikuti **Langkah 6** dari "Metode 1" di atas untuk memperbarui `APP_BASE_URL` dan URI pengalihan Google.
 
 ---
 

@@ -68,38 +68,6 @@ function getPairedDataSources(): { name: string; url: string }[] {
 }
 // --- END: Data Source Parsing Logic ---
 
-// --- START: Relationship Parsing Logic (NEW NAME-BASED FORMAT) ---
-interface SheetLink {
-    sheetName: string;
-    columnName: string;
-}
-
-/**
- * Parses the SHEET_RELATIONSHIPS environment variable string using the new format.
- * Example input: "SISWA.NISN=PRESENSI SHALAT.NISN, SISWA.Nama=PELANGGARAN.Nama"
- * @param relationships The relationship string from environment variables.
- * @returns An array of relationship groups, where each group is an array of SheetLinks.
- */
-function parseSheetRelationships(relationships: string | undefined): SheetLink[][] {
-    if (!relationships) return [];
-    try {
-        return relationships.split(',')
-            .map(group => group.trim().split('=')
-                .map(part => {
-                    const parts = part.trim().split('.');
-                    if (parts.length < 2) return null; // Must have at least Sheet.Column
-                    const sheetName = parts[0].trim().toUpperCase();
-                    const columnName = parts.slice(1).join('.').trim(); // Handle column names with dots
-                    return { sheetName, columnName };
-                }).filter(Boolean) as SheetLink[]
-            ).filter(group => group.length > 1);
-    } catch (error) {
-        console.error("Error parsing SHEET_RELATIONSHIPS. Please check format.", error);
-        return [];
-    }
-}
-// --- END: Relationship Parsing Logic ---
-
 // Self-contained types to avoid path issues in deployment
 enum MessageRole {
   USER = 'user',
@@ -177,34 +145,33 @@ async function performAiActionWithRetry<T>(action: (ai: GoogleGenAI) => Promise<
     throw new Error("Semua koneksi API sedang sibuk karena batas penggunaan telah tercapai. Silakan coba lagi dalam satu menit.");
 }
 
-
 /**
- * Normalizes a class name string to a standard format for reliable comparison.
- * Handles variations like "X1", "X-1", "10 1", etc., and converts them to "X 1".
- * @param name The class name string to normalize.
- * @returns A standardized class name string.
+ * Extracts the schema (headers) and a few random sample rows from raw CSV data
+ * to provide context to the AI for retrieval tasks.
+ * @param schoolData A record mapping sheet names to their raw CSV content.
+ * @returns A record mapping sheet names to their schema and sample data.
  */
-function normalizeClassName(name: string | null | undefined): string {
-  if (!name) return '';
-  
-  let normalized = name.trim().toUpperCase();
+function getSchoolDataContext(schoolData: Record<string, string>): Record<string, { headers: string[]; samples: any[] }> {
+    const getRandomSamples = <T>(arr: T[], count: number): T[] => {
+        if (arr.length <= count) return arr;
+        const shuffled = [...arr].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count);
+    };
 
-  // Replace numeric representations of grades with Roman numerals
-  // Use word boundaries (\b) to avoid replacing '10' in '100'
-  normalized = normalized.replace(/\b12\b/g, 'XII');
-  normalized = normalized.replace(/\b11\b/g, 'XI');
-  normalized = normalized.replace(/\b10\b/g, 'X');
-  
-  // Replace common separators (dot, hyphen) with a space
-  normalized = normalized.replace(/[.-]/g, ' ');
-  
-  // Ensure a space between a Roman numeral grade and the class number (e.g., "X1" -> "X 1")
-  normalized = normalized.replace(/(XII|XI|X)(\d)/g, '$1 $2');
-  
-  // Collapse multiple spaces into a single space
-  normalized = normalized.replace(/\s+/g, ' ');
-  
-  return normalized;
+    const context: Record<string, { headers: string[]; samples: any[] }> = {};
+    for (const [name, csvData] of Object.entries(schoolData)) {
+        if (csvData) {
+            const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() });
+            if (parsed.data.length > 0 && parsed.meta.fields) {
+                const samples = getRandomSamples(parsed.data, 2); // Get 2 samples
+                context[name] = {
+                    headers: parsed.meta.fields,
+                    samples: samples
+                };
+            }
+        }
+    }
+    return context;
 }
 
 
@@ -269,130 +236,123 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log("Using cached school data.");
     }
 
-    // --- START: Smart Two-Step AI Flow ---
-    let finalSystemInstruction: string;
-    let finalSchoolData: string;
+    // --- START: New AI-Powered RAG (Retrieval-Augmented Generation) Flow ---
+    
+    // Step 1: Retrieval - Ask the AI what data is needed to answer the question.
+    const dataContext = getSchoolDataContext(schoolDataCache.data);
+    const dataContextString = JSON.stringify(dataContext, null, 2);
 
-    try {
-      // Step 1: Intent Extraction - Find the class name
-      const intentResponse = await performAiActionWithRetry(async (ai) =>
-        ai.models.generateContent({
-          model: modelToUse,
-          contents: `Analyze the user's message to see if they are asking for student data from a specific class (Rombel). If they are, extract the exact class name. If they are not asking about a specific class, return null for the className. User message: "${userMessage.text}"`,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                className: {
-                  type: Type.STRING,
-                  description: 'The specific class name mentioned by the user, for example "X 1" or "XI 6".',
-                  nullable: true,
-                },
-              },
-            },
-          },
-        })
-      );
-
-      const intentResult = JSON.parse(intentResponse.text ?? '{}');
-      const targetClassName = intentResult?.className;
-      
-      const siswaSheetName = "SISWA";
-      if (targetClassName && schoolDataCache.data[siswaSheetName]) {
-        const normalizedTargetClassName = normalizeClassName(targetClassName);
-        console.log(`Class name detected: "${targetClassName}". Normalized to: "${normalizedTargetClassName}". Filtering data...`);
-        
-        const studentsCsv = schoolDataCache.data[siswaSheetName];
-        const students = Papa.parse(studentsCsv, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data as any[];
-        const filteredStudents = students.filter(s => normalizeClassName(s['Rombel Saat Ini']) === normalizedTargetClassName);
-
-        if (filteredStudents.length > 0) {
-            console.log(`Found ${filteredStudents.length} students in class "${targetClassName}". Filtering related data...`);
-            
-            const focusedData: Record<string, string> = { [siswaSheetName]: Papa.unparse(filteredStudents) };
-            const relationships = process.env.SHEET_RELATIONSHIPS;
-
-            if (relationships) {
-                // --- NEW: Explicit Relationship Filtering (Name-based) ---
-                console.log("Using explicit SHEET_RELATIONSHIPS for advanced filtering.");
-                const parsedRelations = parseSheetRelationships(relationships);
-                const allSheetData: Record<string, any[]> = {};
-
-                // Parse all sheets once for efficiency
-                for (const name in schoolDataCache.data) {
-                    allSheetData[name] = Papa.parse(schoolDataCache.data[name], { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data;
+    const retrievalSchema = {
+      type: Type.OBJECT,
+      properties: {
+        searches: {
+          type: Type.ARRAY,
+          description: "List of sheets and filters to apply.",
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              sheetName: { type: Type.STRING, description: "The exact name of the sheet to search in, e.g., 'SISWA'." },
+              filters: {
+                type: Type.ARRAY,
+                description: "List of filters. If empty, return the whole sheet. Use 'contains' logic for values.",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    column: { type: Type.STRING, description: "The column header to filter on, e.g., 'Nama'." },
+                    value: { type: Type.STRING, description: "The value to look for in the column, e.g., 'Budi'." }
+                  }
                 }
-
-                for (const group of parsedRelations) {
-                    const primaryLink = group.find(link => link.sheetName === siswaSheetName);
-                    if (!primaryLink) continue; // This group doesn't link to SISWA
-
-                    const primaryKeys = new Set(filteredStudents.map(s => s[primaryLink.columnName]).filter(Boolean));
-                    if (primaryKeys.size === 0) continue;
-
-                    for (const relatedLink of group) {
-                        if (relatedLink.sheetName === siswaSheetName) continue;
-                        if (!allSheetData[relatedLink.sheetName]) continue;
-
-                        const filteredRelatedData = allSheetData[relatedLink.sheetName].filter(row => primaryKeys.has(row[relatedLink.columnName]));
-                        if (filteredRelatedData.length > 0) {
-                            focusedData[relatedLink.sheetName] = Papa.unparse(filteredRelatedData);
-                            console.log(`Linked and filtered ${filteredRelatedData.length} rows for sheet: ${relatedLink.sheetName}`);
-                        }
-                    }
-                }
-            } else {
-                // --- FALLBACK: Implicit, Name-based Filtering ---
-                console.log("No SHEET_RELATIONSHIPS defined. Using implicit name-based filtering.");
-                const studentNISNs = new Set(filteredStudents.map(s => s.NISN).filter(Boolean));
-                const studentNames = new Set(filteredStudents.map(s => s.Nama).filter(Boolean));
-
-                if (schoolDataCache.data['PRESENSI SHALAT'] && studentNISNs.size > 0) {
-                    const presensi = Papa.parse(schoolDataCache.data['PRESENSI SHALAT'], { header: true, skipEmptyLines: true }).data as any[];
-                    const filteredPresensi = presensi.filter(p => studentNISNs.has(p.NISN));
-                    if(filteredPresensi.length > 0) focusedData['PRESENSI SHALAT'] = Papa.unparse(filteredPresensi);
-                }
-                if (schoolDataCache.data['PELANGGARAN'] && studentNames.size > 0) {
-                     const pelanggaran = Papa.parse(schoolDataCache.data['PELANGGARAN'], { header: true, skipEmptyLines: true }).data as any[];
-                     const filteredPelanggaran = pelanggaran.filter(p => normalizeClassName(p.KELAS) === normalizedTargetClassName && studentNames.has(p.NAMA));
-                     if(filteredPelanggaran.length > 0) focusedData['PELANGGARAN'] = Papa.unparse(filteredPelanggaran);
-                }
+              }
             }
-            // Filter PEMBELAJARAN (common to both methods)
-            if (schoolDataCache.data['PEMBELAJARAN']) {
-                const pembelajaran = Papa.parse(schoolDataCache.data['PEMBELAJARAN'], { header: true, skipEmptyLines: true }).data as any[];
-                const filteredPembelajaran = pembelajaran.filter(p => normalizeClassName(p['Nama Rombel']) === normalizedTargetClassName);
-                if(filteredPembelajaran.length > 0) focusedData['PEMBELAJARAN'] = Papa.unparse(filteredPembelajaran);
-            }
-
-            finalSystemInstruction = `Anda adalah "Asisten Guru AI". Pengguna bertanya tentang kelas "${targetClassName}". Anda HARUS menggunakan HANYA data JSON yang sudah difilter di bawah ini untuk menjawab. Kunci JSON mewakili nama data (misal "SISWA") dan nilainya adalah string CSV. Jangan mengacu pada data lain. Sajikan data ini dalam format yang diminta pengguna (misalnya, tabel).`;
-            finalSchoolData = JSON.stringify(focusedData, null, 2);
-
-        } else {
-            // Class was mentioned but no students were found in that class in the SISWA sheet.
-            console.log(`No students found for class "${targetClassName}" in SISWA sheet. Falling back to default.`);
-            throw new Error("Fallback: No students found for the class.");
+          }
         }
-      } else {
-        // No class name detected, use the default method
-        throw new Error("Fallback: No class name in user query.");
       }
-    } catch (e) {
-        console.log("Smart flow failed or was skipped. Using default method.", e instanceof Error ? e.message : "");
-        // Default Fallback Logic
-        finalSystemInstruction = `
-Anda adalah "Asisten Guru AI" untuk institusi yang informasinya ada di environment variable.
-Tugas Anda adalah untuk membantu para guru dengan menjawab pertanyaan mereka terkait data institusi.
-Gunakan HANYA data dalam format CSV yang disediakan di bawah ini untuk menjawab pertanyaan. Data ini diambil langsung dari beberapa Google Spreadsheet.
-Setiap kunci dalam objek JSON berikut mewakili nama sheet (misalnya, "SISWA", "GURU") dan nilainya adalah konten sheet tersebut dalam format CSV.
-Jawablah dengan ramah, jelas, dan profesional dalam Bahasa Indonesia.
-Jika pertanyaan di luar konteks data yang diberikan, atau jika Anda tidak dapat menemukan jawabannya dalam data, katakan dengan sopan bahwa Anda tidak memiliki informasi tersebut.
-Jangan mengarang informasi.`;
-        finalSchoolData = JSON.stringify(schoolDataCache.data, null, 2);
-    }
-    // --- END: Smart Two-Step AI Flow ---
+    };
 
+    const retrievalPrompt = `You are a data retrieval expert. Your task is to analyze a user's question and a list of available data sheets (with their columns and sample data) and determine exactly which sheets and filters are needed to answer the question.
+
+User Question: "${userMessage.text}"
+
+Available Data Sheets (Name, Columns, and Samples):
+${dataContextString}
+
+Based on the user's question, identify the necessary data.
+- If a sheet is relevant but you don't need to filter its rows, provide an empty "filters" array for it.
+- Your filters should be broad 'contains' searches, not exact matches.
+- Only include sheets that are absolutely necessary to answer the question. If no sheets are relevant, return an empty "searches" array.
+- The sheetName must be one of the exact names provided in the context.`;
+
+    console.log("Performing retrieval step...");
+    const retrievalResponse = await performAiActionWithRetry(ai =>
+      ai.models.generateContent({
+        model: modelToUse,
+        contents: retrievalPrompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: retrievalSchema,
+        },
+      })
+    );
+    const retrievalResult = JSON.parse(retrievalResponse.text ?? '{"searches":[]}');
+    const searches = retrievalResult.searches || [];
+
+    // Step 2: Filtering - Apply the filters determined by the AI.
+    const focusedData: Record<string, string> = {};
+    if (searches.length > 0) {
+      console.log("AI retrieval plan:", JSON.stringify(searches));
+      for (const search of searches) {
+        const sheetName = search.sheetName.toUpperCase();
+        const filters = search.filters || [];
+        const csvData = schoolDataCache.data[sheetName];
+        if (!csvData) {
+            console.warn(`AI requested non-existent sheet: ${sheetName}`);
+            continue;
+        }
+
+        if (filters.length === 0) {
+          focusedData[sheetName] = csvData; // Include the whole sheet
+        } else {
+          const parsedData = Papa.parse(csvData, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() }).data as any[];
+          let filteredRows = parsedData;
+
+          for (const filter of filters) {
+            if (filter.column && filter.value) {
+                filteredRows = filteredRows.filter(row =>
+                  row[filter.column] &&
+                  String(row[filter.column]).toLowerCase().includes(String(filter.value).toLowerCase())
+                );
+            }
+          }
+
+          if (filteredRows.length > 0) {
+            focusedData[sheetName] = Papa.unparse(filteredRows);
+          }
+        }
+      }
+    } else {
+        console.log("AI retrieval returned no relevant sheets.");
+    }
+    
+    // Step 3: Generation - Ask the AI to answer the question using ONLY the filtered data.
+    let finalSchoolData: string;
+    let finalSystemInstruction: string;
+
+    if (Object.keys(focusedData).length === 0 && searches.length > 0) {
+        // This case means the AI wanted to filter, but the filters returned no results.
+        console.log("After filtering, no data was found. The information likely does not exist.");
+        finalSystemInstruction = `Anda adalah "Asisten Guru AI". Jawab pertanyaan pengguna: "${userMessage.text}". Berdasarkan analisis, data yang Anda minta tidak ditemukan dalam catatan kami. Sampaikan dengan sopan bahwa informasi tersebut tidak tersedia atau mungkin keliru, dan sarankan untuk mencoba pertanyaan lain.`;
+        finalSchoolData = "{}"; // No data
+    } else if (Object.keys(focusedData).length === 0 && searches.length === 0) {
+        // This case means the AI determined from the start that no sheets were relevant.
+        console.log("AI determined no sheets are relevant. The query is likely out of context.");
+        finalSystemInstruction = `Anda adalah "Asisten Guru AI". Jawab pertanyaan pengguna: "${userMessage.text}". Sampaikan dengan sopan bahwa pertanyaan tersebut di luar lingkup data yang Anda miliki (seperti data siswa, guru, jadwal, dll.) dan Anda tidak dapat menjawabnya.`;
+        finalSchoolData = "{}"; // No data
+    } else {
+        console.log(`Data successfully filtered for sheets: ${Object.keys(focusedData).join(', ')}`);
+        finalSystemInstruction = `Anda adalah "Asisten Guru AI". Gunakan HANYA data JSON yang sudah difilter di bawah ini untuk menjawab pertanyaan pengguna. Kunci JSON mewakili nama data (misal "SISWA") dan nilainya adalah string CSV. Jangan mengacu pada data lain. Sajikan jawaban Anda dalam format yang jelas, dan jika diminta, buatlah tabel.`;
+        finalSchoolData = JSON.stringify(focusedData, null, 2);
+    }
+    
     const systemInstructionWithViz = `${finalSystemInstruction}
 PENTING: Jika pengguna meminta visualisasi data (seperti grafik, diagram, perbandingan, rekapitulasi, atau distribusi), Anda HARUS menyertakan **satu atau lebih blok data grafik** dalam format JSON di dalam respons teks Anda.
 Misalnya, jika diminta "grafik batang dan lingkaran", Anda harus membuat KEDUA-DUAnya.
@@ -404,8 +364,7 @@ Contoh respons untuk dua grafik: "Tentu, ini grafiknya: [CHART_DATA]{...pie char
 Jika tidak ada permintaan visualisasi, jawablah seperti biasa tanpa tag atau JSON.`;
 
     const finalPrompt = `${systemInstructionWithViz}\n\nBerikut adalah data yang Anda miliki:\n${finalSchoolData}`;
-
-
+    
     const history = messages
       .slice(0, -1)
       .filter((m: ChatMessage) => m.role === MessageRole.USER || m.role === MessageRole.MODEL)

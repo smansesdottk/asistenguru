@@ -1,8 +1,8 @@
 {
   "name": "asisten-guru-ai",
-  "version": "2.0.0",
+  "version": "3.0.1",
   "private": true,
-  "description": "Aplikasi chat AI untuk guru dengan backend Vercel Serverless Functions.",
+  "description": "Aplikasi chat AI untuk institusi dengan backend Vercel Serverless Functions. Menggunakan arsitektur RAG cerdas untuk menjawab pertanyaan berdasarkan data CSV.",
   "author": "A. Indra Malik - SMAN11MKS",
   "scripts": {
     "dev": "vercel dev",
