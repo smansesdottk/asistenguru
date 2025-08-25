@@ -7,7 +7,6 @@ Asisten Guru AI adalah aplikasi web modern yang dirancang untuk memberdayakan pa
 ## ✨ Fitur Utama
 
 - **Antarmuka Percakapan**: Tanyakan apa pun dalam bahasa alami dan dapatkan jawaban yang relevan dari AI.
-- **Arsitektur Asinkron Anti-Timeout**: Menggunakan pola pekerjaan latar belakang dengan Vercel KV untuk memproses permintaan yang lama, memastikan aplikasi tetap responsif dan andal bahkan saat menganalisis data besar.
 - **Pengambilan Data Cerdas (AI-Powered RAG)**: AI secara otomatis menganalisis pertanyaan Anda untuk menentukan dan mengambil hanya data yang paling relevan dari Google Sheets sebelum merumuskan jawaban, memastikan akurasi dan kecepatan.
 - **Keamanan Fleksibel**:
   - **Otentikasi Google OAuth 2.0 (Opsional)**: Jika dikonfigurasi, dapat memastikan hanya pengguna dengan akun Google Workspace institusi yang dapat login.
@@ -15,6 +14,7 @@ Asisten Guru AI adalah aplikasi web modern yang dirancang untuk memberdayakan pa
   - **Sesi Aman (JWT)**: Menggunakan JSON Web Tokens yang disimpan dalam cookie `HttpOnly` untuk manajemen sesi yang aman.
 - **Arsitektur Serverless**: Seluruh aplikasi, baik frontend maupun backend, berjalan di Vercel, menghilangkan kebutuhan untuk mengelola server sendiri.
 - **Rotasi Kunci API**: Mendukung banyak kunci API Gemini dan merotasinya secara otomatis untuk mendistribusikan beban dan menghindari batas kuota.
+- **Status Sistem**: Indikator real-time untuk memeriksa konektivitas ke layanan penting seperti Google Sheets dan Gemini API.
 - **Dapat Diinstal (PWA)**: Dapat diinstal di perangkat seluler (Android/iOS) atau desktop langsung dari browser untuk akses cepat seperti aplikasi native, lengkap dengan dukungan offline.
 
 ## 🚀 Tumpukan Teknologi
@@ -23,7 +23,6 @@ Asisten Guru AI adalah aplikasi web modern yang dirancang untuk memberdayakan pa
 - **Backend**: Vercel Serverless Functions (TypeScript)
 - **Model AI**: Google Gemini API (`gemini-2.5-flash`)
 - **Sumber Data**: Google Sheets (diakses sebagai CSV)
-- **Pekerjaan Latar Belakang**: **Vercel KV** via **Upstash** (untuk manajemen antrian & status)
 - **Autentikasi**: `jose` untuk JWT, Google OAuth 2.0
 - **Platform**: Vercel
 
@@ -88,31 +87,21 @@ Sebelum memulai, pastikan Anda sudah memiliki semua informasi berikut. Ini akan 
 3.  Di halaman "Import Git Repository", Vercel akan menampilkan daftar repositori dari akun GitHub Anda. Pilih repositori `asistenguru` yang baru saja Anda fork, lalu klik **"Import"**.
 4.  Vercel akan secara otomatis mendeteksi bahwa ini adalah proyek React/Vercel Functions dan akan menampilkan halaman **"Configure Project"**.
 
-#### Langkah 4: Konfigurasi Penyimpanan & Variabel Lingkungan di Vercel
+#### Langkah 4: Konfigurasi Environment Variables di Vercel
 
-Ini adalah bagian terpenting. Di halaman "Configure Project", konfigurasikan dua hal:
+Ini adalah bagian terpenting. Di halaman "Configure Project", buka bagian **"Environment Variables"**. Anda perlu menambahkan semua konfigurasi dari file `env.txt`.
 
-**1. Hubungkan Vercel KV Store via Upstash (Wajib)**
-Fitur anti-timeout aplikasi memerlukan Vercel KV. Sejak pembaruan Vercel, KV sekarang terintegrasi melalui Upstash.
-- Gulir ke bawah ke bagian **"Storage"**.
-- Cari **Upstash** di bagian **"Marketplace Database Providers"** dan klik tombol **">"** atau **"Connect"**.
-- Ikuti petunjuk untuk membuat database Upstash Redis baru. Anda bisa memilih paket gratis (*free tier*).
-- Beri nama (misalnya, `asisten-guru-kv`), pilih region terdekat, dan klik **"Create and Connect"**.
-- Setelah terhubung, Vercel akan **secara otomatis** menambahkan variabel lingkungan `KV_*` yang diperlukan ke proyek Anda.
-
-**2. Atur Environment Variables**
-Buka bagian **"Environment Variables"**. Anda perlu menambahkan semua konfigurasi dari file `env.txt`.
-
--   Salin nama setiap variabel dari `env.txt` (misalnya, `ORGANIZATION_NAME_FULL`) ke kolom "Name" di Vercel.
--   Isi nilainya di kolom "Value" sesuai data yang sudah Anda siapkan di Langkah 1.
--   **PENTING**:
+1.  Salin nama setiap variabel dari `env.txt` (misalnya, `ORGANIZATION_NAME_FULL`) ke kolom "Name" di Vercel.
+2.  Isi nilainya di kolom "Value" sesuai data yang sudah Anda siapkan di Langkah 1.
+3.  **PENTING**:
     *   **`APP_BASE_URL`**: Karena Anda belum tahu URL finalnya, isi dengan placeholder sementara, contoh: `https://placeholder.com`. **Kita akan perbaiki ini nanti.**
-    *   **`JWT_SECRET` & `INTERNAL_API_SECRET`**: Buat string acak yang sangat panjang dan aman (64+ karakter) untuk *masing-masing* variabel. Gunakan generator online seperti [jwtsecrets.com](https://jwtsecrets.com/#generator).
+    *   **`JWT_SECRET`**: Buat string acak yang sangat panjang dan aman (64+ karakter). Gunakan generator online seperti [jwtsecrets.com](https://jwtsecrets.com/#generator).
+    *   **`ORGANIZATION_DATA_SOURCES` & `SHEET_NAMES`**: Pastikan urutan URL dan Nama sama persis.
     *   **Login Google (Opsional)**: Jika tidak ingin pakai login Google, biarkan `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_WORKSPACE_DOMAIN` **kosong**. Aplikasi akan otomatis beralih ke mode "Hanya Admin".
 
 #### Langkah 5: Mulai Deployment
 
-Setelah semua variabel terisi dan KV terhubung, klik tombol **"Deploy"**. Vercel akan mulai membangun dan men-deploy aplikasi Anda. Proses ini mungkin memakan waktu beberapa menit.
+Setelah semua variabel terisi, klik tombol **"Deploy"**. Vercel akan mulai membangun dan men-deploy aplikasi Anda. Proses ini mungkin memakan waktu beberapa menit.
 
 Setelah selesai, Vercel akan memberikan Anda URL produksi (contoh: `https://asistenguru-xxxx.vercel.app`). **Selamat, aplikasi Anda sudah online!** Namun, masih ada satu langkah terakhir yang krusial.
 
@@ -146,7 +135,25 @@ Metode ini mengotomatiskan proses penyalinan proyek dan penyiapan di Vercel. Ini
 2.  Anda akan diminta untuk login dengan akun GitHub Anda.
 3.  Vercel akan meminta Anda membuat repositori Git baru di akun Anda (ini adalah salinan dari proyek asli). Beri nama sesuai keinginan Anda, lalu klik **"Create"**.
 4.  Setelah itu, Anda akan langsung diarahkan ke halaman **"Configure Project"** di Vercel.
-5.  Sekarang, ikuti **Langkah 4, 5, dan 6** dari **Metode 1** di atas untuk menghubungkan **Vercel KV via Upstash**, mengisi *Environment Variables*, men-deploy, dan melakukan konfigurasi final. Prosesnya persis sama dari titik ini.
+5.  Sekarang, ikuti **Langkah 4, 5, dan 6** dari **Metode 1** di atas untuk mengisi *Environment Variables*, men-deploy, dan melakukan konfigurasi final. Prosesnya persis sama dari titik ini.
+
+---
+
+### Metode 3: Deployment Manual via Vercel CLI (Alternatif)
+
+Gunakan metode ini untuk men-deploy langsung dari terminal tanpa menghubungkan repositori Git secara formal ke Vercel.
+
+1.  **Instalasi**: Unduh kode proyek, lalu instal Vercel CLI (`npm install -g vercel`) dan dependensi proyek (`npm install`).
+2.  **Login**: Jalankan `vercel login` di terminal.
+3.  **Buat `.env.local`**: Salin `env.txt` menjadi `.env.local` dan isi semua nilainya.
+4.  **Hubungkan Proyek**: Jalankan `vercel` untuk menghubungkan folder lokal Anda ke proyek baru di Vercel.
+5.  **Tambahkan Variabel ke Vercel**: Tambahkan semua variabel dari `.env.local` ke Vercel menggunakan perintah `vercel env add NAMA_VARIABEL "nilainya"`.
+6.  **Build & Deploy**:
+    ```bash
+    vercel build --prod
+    vercel deploy --prebuilt --prod
+    ```
+7.  **Konfigurasi Final**: Ikuti **Langkah 6** dari "Metode 1" di atas untuk memperbarui `APP_BASE_URL` dan URI pengalihan Google.
 
 ---
 
@@ -160,13 +167,8 @@ Metode ini mengotomatiskan proses penyalinan proyek dan penyiapan di Vercel. Ini
     vercel login
     ```
 3.  **Konfigurasi `.env`**: Buat salinan dari `env.txt` yang sudah diisi, dan ganti namanya menjadi `.env.local` di folder root proyek. Pastikan `APP_BASE_URL` diisi dengan `http://localhost:3000`.
-4.  **Tarik Variabel Lingkungan Vercel**: Untuk menggunakan Vercel KV secara lokal, Anda perlu menghubungkan proyek lokal Anda ke proyek Vercel dan menarik variabel lingkungannya. Jalankan:
-    ```bash
-    vercel link
-    vercel env pull .env.local
-    ```
-5.  **Konfigurasi Google OAuth Lokal (Jika Digunakan)**: Di Google Cloud Console, tambahkan URI redirect berikut untuk development: `http://localhost:3000/api/auth-callback`
-6.  **Jalankan Server Development**:
+4.  **Konfigurasi Google OAuth Lokal (Jika Digunakan)**: Di Google Cloud Console, tambahkan URI redirect berikut untuk development: `http://localhost:3000/api/auth-callback`
+5.  **Jalankan Server Development**:
     ```bash
     vercel dev
     ```

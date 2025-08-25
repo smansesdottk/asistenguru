@@ -40,15 +40,12 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
   const isUser = message.role === MessageRole.USER;
   const showShareButton = typeof navigator.share === 'function';
 
-  // Check if this is a processing/placeholder message
-  const isProcessing = message.role === MessageRole.MODEL && message.text === '' && message.jobStatus;
-
   const bubbleClasses = isUser ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-gray-700 dark:text-slate-200';
   const icon = isUser ? <UserIcon /> : <BotIcon />;
 
   const contentParts = useMemo(() => {
     chartRefs.current = []; // Reset refs on re-render
-    if (isUser || isProcessing || !message.text) {
+    if (isUser || !message.text) {
       return [{ type: 'text', content: message.text }];
     }
 
@@ -97,7 +94,7 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
     }
 
     return parts.length > 0 ? parts : [{ type: 'text', content: message.text }];
-  }, [message.text, isUser, isProcessing]);
+  }, [message.text, isUser]);
   
   const handleCopy = () => {
     // Salin hanya teks, tanpa data grafik
@@ -246,24 +243,6 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, onDelete
   };
 
   let chartIndexCounter = 0;
-
-  if (isProcessing) {
-    return (
-       <div className={`group flex items-start gap-3`}>
-        <div className="flex-shrink-0">{icon}</div>
-         <div className="flex flex-col items-start">
-            <div className={`bg-slate-200 dark:bg-gray-700 px-4 py-3 rounded-2xl shadow-sm flex items-center space-x-2`}>
-              <div className="w-2 h-2 bg-slate-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-              <div className="w-2 h-2 bg-slate-500 dark:bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-              <div className="w-2 h-2 bg-slate-500 dark:bg-slate-400 rounded-full animate-bounce"></div>
-              {message.jobStatus?.statusMessage && (
-                  <span className="text-sm text-slate-600 dark:text-slate-300 italic">{message.jobStatus.statusMessage}</span>
-              )}
-            </div>
-         </div>
-      </div>
-    );
-  }
 
   return (
     <div className={`group flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>

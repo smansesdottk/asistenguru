@@ -185,19 +185,13 @@ KEMBALIKAN HANYA dalam format JSON denganstruktur: { "questions": ["pertanyaan 1
             })
         );
         
-        let result = { questions: [] }; // Default fallback value
-        const jsonText = response.text?.trim();
-        if (jsonText) {
-            try {
-                // Robust parsing: handle potential markdown wrapping
-                const cleanJson = jsonText.replace(/^```json\s*/, '').replace(/```$/, '');
-                result = JSON.parse(cleanJson);
-            } catch (e) {
-                console.error(`Could not parse prompt starters JSON. AI Response was: "${jsonText}". Error: ${e}`);
-                // Fallback to the default empty questions array, which is already set
-            }
+        // Attempt to parse the response, as Gemini might still wrap it in markdown
+        let jsonText = response.text.trim();
+        if (jsonText.startsWith('```json')) {
+          jsonText = jsonText.substring(7, jsonText.length - 3).trim();
         }
         
+        const result = JSON.parse(jsonText);
         return res.status(200).json(result);
 
     } catch (error) {

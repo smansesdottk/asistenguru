@@ -9,8 +9,6 @@ export type Theme = 'light' | 'dark' | 'system';
 export interface ChatMessage {
   role: MessageRole;
   text: string;
-  jobId?: string; // Tautkan pesan ke pekerjaan asinkron
-  jobStatus?: JobStatus; // Simpan status pekerjaan terakhir
 }
 
 export interface ChatConversation {
@@ -55,15 +53,4 @@ export interface PublicConfig {
   isGoogleLoginConfigured?: boolean;
   appBaseUrl?: string;
   googleWorkspaceDomain?: string;
-}
-
-
-// Tipe untuk sistem pekerjaan asinkron
-export type JobState = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-
-export interface JobStatus {
-  status: JobState;
-  statusMessage?: string; // Pesan yang ramah untuk UI, mis. "Menganalisis data..."
-  result?: string; // Hasil akhir jika COMPLETED
-  error?: string; // Pesan error jika FAILED
 }
