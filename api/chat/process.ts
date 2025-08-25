@@ -144,7 +144,20 @@ async function processJob(jobId: string) {
     };
     const retrievalPrompt = `Analyze the user's question and the available data schemas to determine which sheets and filters are needed. Question: "${userMessage.text}". Schemas: ${JSON.stringify(dataContext)}. Return only relevant sheets. Use broad 'contains' logic for filters.`;
     const retrievalResponse = await performAiActionWithRetry(ai => ai.models.generateContent({ model: modelToUse, contents: retrievalPrompt, config: { responseMimeType: "application/json", responseSchema: retrievalSchema }}));
-    const searches = JSON.parse(retrievalResponse.text ?? '{"searches":[]}').searches || [];
+    
+    let searches = [];
+    const retrievalText = retrievalResponse.text?.trim();
+    if (retrievalText) {
+        try {
+            // Robust parsing: handle potential markdown wrapping
+            const cleanJson = retrievalText.replace(/^```json\s*/, '').replace(/```$/, '');
+            searches = JSON.parse(cleanJson).searches || [];
+        } catch (e) {
+            console.warn(`Could not parse retrieval JSON. AI Response was: "${retrievalText}". Error: ${e}`);
+            searches = []; // Gracefully fallback to an empty search
+        }
+    }
+
 
     // 3. Filtering Step
     const focusedData: Record<string, string> = {};
