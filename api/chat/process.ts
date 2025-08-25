@@ -128,7 +128,7 @@ async function processJob(jobId: string) {
     jobData.updatedAt = Date.now();
     await kv.set(jobKey, jobData, { ex: 3600 });
     
-    const { messages, model } = jobData.input;
+    const { messages, model }: { messages: ChatMessage[], model: string } = jobData.input;
     const modelToUse = model || 'gemini-2.5-flash';
     const userMessage = messages[messages.length - 1];
 
@@ -210,23 +210,43 @@ async function processJob(jobId: string) {
     await kv.set(jobKey, jobData, { ex: 3600 });
 
   } catch (error) {
-    console.error(`Error processing job ${jobId}:`, error);
+    console.error(`[PROCESS_JOB_ERROR] Main processing failed for job ${jobId}:`, error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during processing.";
     
-    // Fortified catch block: prevent this from crashing the function
-    try {
-        const jobDataToUpdate = jobData || await kv.get(jobKey);
-        if (jobDataToUpdate) {
-            jobDataToUpdate.status = 'FAILED';
-            jobDataToUpdate.error = errorMessage;
-            jobDataToUpdate.updatedAt = Date.now();
-            await kv.set(jobKey, jobDataToUpdate, { ex: 3600 });
-        } else {
-            console.error(`Failed to update status for job ${jobId} because job data could not be retrieved from KV store.`);
+    // --- Start of Ultra-Robust Error Handling ---
+    // This block is designed to NEVER crash, only log errors if it fails to update the job status.
+    
+    let jobDataToUpdate: any = jobData; // Use jobData if it was already fetched
+
+    // If jobData wasn't fetched before the error, try to get it now.
+    if (!jobDataToUpdate) {
+        try {
+            console.log(`[PROCESS_JOB_CATCH] Job data not available, attempting to fetch from KV for job ${jobId}...`);
+            jobDataToUpdate = await kv.get(jobKey);
+        } catch (kvGetError) {
+            console.error(`[PROCESS_JOB_CATCH_CRITICAL] Could not retrieve job data from KV for job ${jobId} even inside the catch block. Cannot update status.`, kvGetError);
+            // Exit here. We can't do anything else without the job data.
+            return; 
         }
-    } catch (updateError) {
-        console.error(`CRITICAL: Failed to update job ${jobId} status to FAILED. Further errors may occur.`, updateError);
     }
+
+    // If we still don't have job data, we can't proceed.
+    if (!jobDataToUpdate) {
+        console.error(`[PROCESS_JOB_CATCH_CRITICAL] Job ${jobId} does not exist in KV store. Cannot update status to FAILED.`);
+        return;
+    }
+
+    // Now, try to update the status to FAILED.
+    try {
+        jobDataToUpdate.status = 'FAILED';
+        jobDataToUpdate.error = errorMessage;
+        jobDataToUpdate.updatedAt = Date.now();
+        await kv.set(jobKey, jobDataToUpdate, { ex: 3600 });
+        console.log(`[PROCESS_JOB_CATCH] Successfully updated job ${jobId} status to FAILED.`);
+    } catch (kvSetError) {
+        console.error(`[PROCESS_JOB_CATCH_CRITICAL] Failed to update job ${jobId} status to FAILED in KV store. The job may remain stuck in 'PROCESSING'.`, kvSetError);
+    }
+    // --- End of Ultra-Robust Error Handling ---
   }
 }
 
