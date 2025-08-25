@@ -1,36 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { SignJWT, type JWTPayload } from 'jose';
-
-// --- START: Self-contained Auth Logic ---
-const SESSION_COOKIE_NAME = 'app_session';
-
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  picture: string;
-  isAdmin?: boolean;
-}
-
-async function createSessionToken(payload: UserProfile): Promise<string> {
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET environment variable is not set. Cannot create session.');
-  }
-  const secretKey = new TextEncoder().encode(jwtSecret);
-
-  return await new SignJWT(payload as unknown as JWTPayload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime('24h') // Sesi berlaku selama 24 jam
-    .sign(secretKey);
-}
-
-function createSessionCookie(token: string): string {
-    const isProduction = process.env.VERCEL_ENV === 'production';
-    return `${SESSION_COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=${60 * 60 * 24}; ${isProduction ? 'Secure;' : ''} SameSite=Lax`;
-}
-// --- END: Self-contained Auth Logic ---
+import { createSessionToken, createSessionCookie, type UserProfile } from './_utils/auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const code = req.query.code as string | undefined;
