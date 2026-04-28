@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asisten-guru-ai-cache-v3'; // Bumping version to v3
+const CACHE_NAME = 'asisten-guru-ai-cache-v2'; // Versi cache dinaikkan untuk memicu pembaruan
 const URLS_TO_CACHE = [
   '/',
   '/index.html',

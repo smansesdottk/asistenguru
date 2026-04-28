@@ -196,7 +196,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const { messages, model } = req.body;
-    const modelToUse = model || 'gemini-3-flash-preview'; // Default to gemini-3 flash
+    const modelToUse = model || 'gemini-2.0-flash'; // Default to 2.0 flash
     const userMessage = messages[messages.length - 1];
     
     if (!messages || !Array.isArray(messages) || messages.length === 0 || !userMessage) {
@@ -282,17 +282,17 @@ Based on the user's question, identify the necessary data.
 - Only include sheets that are absolutely necessary to answer the question. If no sheets are relevant, return an empty "searches" array.
 - The sheetName must be one of the exact names provided in the context.`;
 
-    console.log(`Performing retrieval step with model: ${modelToUse}...`);
-    const retrievalResponse = await performAiActionWithRetry(async (ai) => {
-      return ai.models.generateContent({ 
+    console.log("Performing retrieval step...");
+    const retrievalResponse = await performAiActionWithRetry(ai =>
+      ai.models.generateContent({
         model: modelToUse,
         contents: retrievalPrompt,
         config: {
           responseMimeType: "application/json",
           responseSchema: retrievalSchema,
-        }
-      });
-    });
+        },
+      })
+    );
     const retrievalResult = JSON.parse(retrievalResponse.text ?? '{"searches":[]}');
     const searches = retrievalResult.searches || [];
 

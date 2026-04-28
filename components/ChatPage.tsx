@@ -35,7 +35,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
   const [promptStarters, setPromptStarters] = useState<string[]>([]);
   const [isLoadingStarters, setIsLoadingStarters] = useState(true);
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false); // State untuk mencegah race condition
-  const [selectedModel, setSelectedModel] = useState('gemini-3-flash-preview');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash');
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
@@ -155,7 +155,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
 
   const handleNewChat = () => {
     setActiveConversationId(null);
-    setSelectedModel('gemini-3-flash-preview'); // Reset to default model
+    setSelectedModel('gemini-2.0-flash'); // Reset to default model
     setIsSidebarOpen(false);
   };
   
@@ -219,7 +219,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ user, config, onLogout, isUpdateAva
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           messages: messageHistory,
-          model: conversationToUpdate.model || 'gemini-3-flash-preview', // Fallback for old chats
+          model: conversationToUpdate.model || 'gemini-2.0-flash', // Fallback for old chats
         }),
       });
 

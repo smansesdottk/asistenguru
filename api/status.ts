@@ -69,11 +69,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const firstApiKey = apiKeys[0];
     try {
       const ai = new GoogleGenAI({ apiKey: firstApiKey });
-      // Perform a lightweight text generation as a robust connection test
-      await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: [{ role: 'user', parts: [{ text: 'hi' }] }],
-        config: { maxOutputTokens: 1 }
+      // Gunakan panggilan yang ringan seperti countTokens untuk validasi
+      await ai.models.countTokens({
+        model: 'gemini-2.0-flash',
+        contents: { parts: [{ text: "hello" }] }
       });
       response.gemini = { status: 'connected', message: 'Koneksi ke Gemini API berhasil.' };
     } catch (e) {

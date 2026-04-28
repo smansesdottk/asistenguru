@@ -8,12 +8,11 @@ interface ModelSelectorProps {
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onModelChange, disabled }) => {
   const models = [
-    { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', desc: 'Penalaran Ultima (Terbaru)', icon: '🧠' },
-    { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', desc: 'Kecepatan & Kecerdasan Terkini', icon: '⚡' },
-    { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro', desc: 'Eksperimental Tinggi', icon: '🏛️' },
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Paling Responsif & Stabil', icon: '⚖️' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Penalaran Mendalam (Stabil)', icon: '📚' },
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', desc: 'Efisien & Andal (Stabil)', icon: '🛡️' },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Sangat Cepat & Responsif (Terbaru)', icon: '⚡' },
+    { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro (Exp)', desc: 'Kemampuan Penalaran Tinggi', icon: '🧠' },
+    { id: 'gemini-2.0-flash-thinking-exp-01-21', name: 'Gemini 2.0 Thinking', desc: 'Pemikiran Logis Mendalam', icon: '🔍' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Analisis Kompleks & Stabil', icon: '🏛️' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', desc: 'Hemat & Efisien', icon: '⚖️' },
   ];
 
   return (
@@ -52,7 +51,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onModelCha
         ))}
       </div>
       <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-8 italic font-medium">
-        * Model dapat diubah kembali saat memulai chat baru. Gunakan Gemini 3.1 untuk teknologi terbaru.
+        * Model dapat diubah kembali saat memulai chat baru. Gunakan seri 2.0 untuk performa terbaik.
       </p>
     </div>
   );
