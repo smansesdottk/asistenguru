@@ -164,11 +164,10 @@ ${dataContextString}
 KEMBALIKAN HANYA dalam format JSON denganstruktur: { "questions": ["pertanyaan 1", "pertanyaan 2", "pertanyaan 3", "pertanyaan 4"] }
 `;
 
-        const response = await performAiActionWithRetry<GenerateContentResponse>(ai => 
-            ai.models.generateContent({
+        const response = await performAiActionWithRetry(async (ai) => {
+            const genModel = ai.getGenerativeModel({ 
                 model: 'gemini-1.5-flash',
-                contents: prompt,
-                config: {
+                generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: Type.OBJECT,
@@ -180,13 +179,14 @@ KEMBALIKAN HANYA dalam format JSON denganstruktur: { "questions": ["pertanyaan 1
                                 }
                             }
                         }
-                    }
+                    } as any
                 }
-            })
-        );
+            });
+            const result = await genModel.generateContent(prompt);
+            return result.response;
+        });
         
-        // Attempt to parse the response, as Gemini might still wrap it in markdown
-        let jsonText = response.text.trim();
+        const jsonText = response.text().trim();
         if (jsonText.startsWith('```json')) {
           jsonText = jsonText.substring(7, jsonText.length - 3).trim();
         }

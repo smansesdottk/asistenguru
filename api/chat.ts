@@ -282,18 +282,19 @@ Based on the user's question, identify the necessary data.
 - Only include sheets that are absolutely necessary to answer the question. If no sheets are relevant, return an empty "searches" array.
 - The sheetName must be one of the exact names provided in the context.`;
 
-    console.log("Performing retrieval step...");
-    const retrievalResponse = await performAiActionWithRetry(ai =>
-      ai.models.generateContent({
+    console.log(`Performing retrieval step with model: ${modelToUse}...`);
+    const retrievalResponse = await performAiActionWithRetry(async (ai) => {
+      const genModel = ai.getGenerativeModel({ 
         model: modelToUse,
-        contents: retrievalPrompt,
-        config: {
+        generationConfig: {
           responseMimeType: "application/json",
-          responseSchema: retrievalSchema,
-        },
-      })
-    );
-    const retrievalResult = JSON.parse(retrievalResponse.text ?? '{"searches":[]}');
+          responseSchema: retrievalSchema as any,
+        }
+      });
+      const result = await genModel.generateContent(retrievalPrompt);
+      return result.response;
+    });
+    const retrievalResult = JSON.parse(retrievalResponse.text() ?? '{"searches":[]}');
     const searches = retrievalResult.searches || [];
 
     // Step 2: Filtering - Apply the filters determined by the AI.
@@ -378,17 +379,21 @@ Jika tidak ada permintaan visualisasi, jawablah seperti biasa tanpa tag atau JSO
     res.setHeader('Transfer-Encoding', 'chunked');
     
     const resultStream = await performAiActionWithRetry(async (ai) => {
-        const chat = ai.chats.create({
+        const model = ai.getGenerativeModel({ 
           model: modelToUse,
-          config: { systemInstruction: finalPrompt },
+          systemInstruction: finalPrompt 
+        });
+        const chat = model.startChat({
           history: history,
         });
-        return chat.sendMessageStream({ message: userMessage.text });
+        const streamResult = await chat.sendMessageStream(userMessage.text);
+        return streamResult.stream;
     });
     
     for await (const chunk of resultStream) {
-      if(chunk.text) {
-        res.write(chunk.text);
+      const text = chunk.text();
+      if(text) {
+        res.write(text);
       }
     }
     
