@@ -69,11 +69,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const firstApiKey = apiKeys[0];
     try {
       const ai = new GoogleGenAI({ apiKey: firstApiKey });
-      // Use generateContent with very small limit as it's more universally supported than countTokens in some SDK versions
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-      await model.generateContent({
+      // Perform a lightweight text generation as a robust connection test
+      await ai.models.generateContent({
+        model: 'gemini-1.5-flash',
         contents: [{ role: 'user', parts: [{ text: 'hi' }] }],
-        generationConfig: { maxOutputTokens: 1 }
+        config: { maxOutputTokens: 1 }
       });
       response.gemini = { status: 'connected', message: 'Koneksi ke Gemini API berhasil.' };
     } catch (e) {

@@ -284,17 +284,16 @@ Based on the user's question, identify the necessary data.
 
     console.log(`Performing retrieval step with model: ${modelToUse}...`);
     const retrievalResponse = await performAiActionWithRetry(async (ai) => {
-      const genModel = ai.getGenerativeModel({ 
+      return ai.models.generateContent({ 
         model: modelToUse,
-        generationConfig: {
+        contents: retrievalPrompt,
+        config: {
           responseMimeType: "application/json",
-          responseSchema: retrievalSchema as any,
+          responseSchema: retrievalSchema,
         }
       });
-      const result = await genModel.generateContent(retrievalPrompt);
-      return result.response;
     });
-    const retrievalResult = JSON.parse(retrievalResponse.text() ?? '{"searches":[]}');
+    const retrievalResult = JSON.parse(retrievalResponse.text ?? '{"searches":[]}');
     const searches = retrievalResult.searches || [];
 
     // Step 2: Filtering - Apply the filters determined by the AI.
@@ -379,21 +378,17 @@ Jika tidak ada permintaan visualisasi, jawablah seperti biasa tanpa tag atau JSO
     res.setHeader('Transfer-Encoding', 'chunked');
     
     const resultStream = await performAiActionWithRetry(async (ai) => {
-        const model = ai.getGenerativeModel({ 
+        const chat = ai.chats.create({
           model: modelToUse,
-          systemInstruction: finalPrompt 
-        });
-        const chat = model.startChat({
+          config: { systemInstruction: finalPrompt },
           history: history,
         });
-        const streamResult = await chat.sendMessageStream(userMessage.text);
-        return streamResult.stream;
+        return chat.sendMessageStream({ message: userMessage.text });
     });
     
     for await (const chunk of resultStream) {
-      const text = chunk.text();
-      if(text) {
-        res.write(text);
+      if(chunk.text) {
+        res.write(chunk.text);
       }
     }
     

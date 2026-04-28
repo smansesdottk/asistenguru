@@ -165,9 +165,10 @@ KEMBALIKAN HANYA dalam format JSON denganstruktur: { "questions": ["pertanyaan 1
 `;
 
         const response = await performAiActionWithRetry(async (ai) => {
-            const genModel = ai.getGenerativeModel({ 
+            return ai.models.generateContent({ 
                 model: 'gemini-1.5-flash',
-                generationConfig: {
+                contents: prompt,
+                config: {
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: Type.OBJECT,
@@ -179,14 +180,12 @@ KEMBALIKAN HANYA dalam format JSON denganstruktur: { "questions": ["pertanyaan 1
                                 }
                             }
                         }
-                    } as any
+                    }
                 }
             });
-            const result = await genModel.generateContent(prompt);
-            return result.response;
         });
         
-        const jsonText = response.text().trim();
+        let jsonText = response.text.trim();
         if (jsonText.startsWith('```json')) {
           jsonText = jsonText.substring(7, jsonText.length - 3).trim();
         }

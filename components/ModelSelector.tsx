@@ -10,10 +10,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onModelCha
   const models = [
     { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', desc: 'Penalaran Ultima (Terbaru)', icon: '🧠' },
     { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', desc: 'Kecepatan & Kecerdasan Terkini', icon: '⚡' },
-    { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro', desc: 'Penalaran Kompleks', icon: '🏛️' },
+    { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro', desc: 'Eksperimental Tinggi', icon: '🏛️' },
     { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Paling Responsif & Stabil', icon: '⚖️' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Analisis Mendalam', icon: '📚' },
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', desc: 'Efisien & Cepat', icon: '🛡️' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Penalaran Mendalam (Stabil)', icon: '📚' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', desc: 'Efisien & Andal (Stabil)', icon: '🛡️' },
   ];
 
   return (
