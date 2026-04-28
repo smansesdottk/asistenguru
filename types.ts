@@ -16,7 +16,7 @@ export interface ChatConversation {
   title: string;
   messages: ChatMessage[];
   createdAt: string; // ISO string date
-  model?: string; // Model AI yang digunakan, misal: 'gemini-2.5-flash'
+  model?: string; // Model AI yang digunakan, misal: 'gemini-3.1-flash-preview'
 }
 
 export interface Teacher {

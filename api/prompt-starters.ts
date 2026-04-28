@@ -166,7 +166,7 @@ KEMBALIKAN HANYA dalam format JSON denganstruktur: { "questions": ["pertanyaan 1
 
         const response = await performAiActionWithRetry<GenerateContentResponse>(ai => 
             ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.1-flash-preview',
                 contents: prompt,
                 config: {
                     responseMimeType: "application/json",

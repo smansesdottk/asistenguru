@@ -196,7 +196,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const { messages, model } = req.body;
-    const modelToUse = model || 'gemini-2.5-flash'; // Default to 2.5 flash
+    const modelToUse = model || 'gemini-3-flash-preview'; // Default to gemini-3 flash
     const userMessage = messages[messages.length - 1];
     
     if (!messages || !Array.isArray(messages) || messages.length === 0 || !userMessage) {
