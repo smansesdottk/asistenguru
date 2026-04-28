@@ -8,12 +8,12 @@ interface ModelSelectorProps {
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onModelChange, disabled }) => {
   const models = [
-    { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro', desc: 'Ultima Reasoning (Terbaru)', icon: '🚀' },
-    { id: 'gemini-3.1-flash-preview', name: 'Gemini 3.1 Flash', desc: 'Ultima Speed (Terbaru)', icon: '✨' },
-    { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', desc: 'Penalaran Superior', icon: '💎' },
-    { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', desc: 'Sangat Cepat & Cerdas', icon: '🌟' },
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Responsif & Stabil', icon: '⚡' },
-    { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro', desc: 'Eksperimental Tinggi', icon: '🧠' },
+    { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', desc: 'Penalaran Ultima (Terbaru)', icon: '🧠' },
+    { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', desc: 'Kecepatan & Kecerdasan Terkini', icon: '⚡' },
+    { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro', desc: 'Penalaran Kompleks', icon: '🏛️' },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Paling Responsif & Stabil', icon: '⚖️' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Analisis Mendalam', icon: '📚' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', desc: 'Efisien & Cepat', icon: '🛡️' },
   ];
 
   return (

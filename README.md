@@ -21,7 +21,7 @@ Asisten Guru AI adalah aplikasi web modern yang dirancang untuk memberdayakan pa
 
 - **Frontend**: React, TypeScript, Tailwind CSS
 - **Backend**: Vercel Serverless Functions (TypeScript)
-- **Model AI**: Google Gemini API (`gemini-3.1-flash-preview`)
+- **Model AI**: Google Gemini API (`gemini-3-flash-preview`)
 - **Sumber Data**: Google Sheets (diakses sebagai CSV)
 - **Autentikasi**: `jose` untuk JWT, Google OAuth 2.0
 - **Platform**: Vercel
